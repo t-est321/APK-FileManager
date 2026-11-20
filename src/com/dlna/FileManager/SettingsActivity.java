@@ -260,6 +260,12 @@ public final class SettingsActivity extends Activity {
       }
     }));
     addHeader(Lang.t("Files"), "Open rules for viewer and editor");
+    rows.addView(toggleBtn(Lang.t("Media preview"), s.mediaPreview, new Runnable() {
+      @Override
+      public void run() {
+        s.mediaPreview = !s.mediaPreview;
+      }
+    }));
     rows.addView(toggleBtn(Lang.t("Open binary files"), s.openBinary, new Runnable() {
       @Override
       public void run() {
