@@ -561,7 +561,7 @@ public final class MainActivity extends Activity {
     });
     actionsBlock = new LinearLayout(this);
     actionsBlock.setOrientation(LinearLayout.VERTICAL);
-    int ap = Theme.dp(this, Theme.compact(this) ? 4 : 4);
+    int ap = Theme.dp(this, 4);
     actionsBlock.setPadding(ap, Theme.dp(this, 2), ap, Theme.dp(this, Theme.compact(this) ? 4 : 6));
     rebuildActions();
   }
@@ -785,9 +785,6 @@ public final class MainActivity extends Activity {
         File[] arr = FileOps.list(currentDir, s.showHidden, s.sortMode, s.foldersFirst);
         File[] probed = Probe.forPath(this, dirPath);
         if (Probe.isSystemPath(dirPath) && s.optNoProbe) {
-          probed = new File[0];
-        }
-        if (Probe.isVerifiedPath(dirPath) && s.optNoVerified) {
           probed = new File[0];
         }
         if (FileOps.isCacheRoot(currentDir)) {
@@ -3095,11 +3092,7 @@ public final class MainActivity extends Activity {
   @Override
   protected void onDestroy() {
     flushTabs();
-    if (AppSettings.get().clearTempsOnExit) {
-      FileOps.emptyDir(AppSettings.incomingDir(this));
-      FileOps.emptyDir(AppSettings.openAsDir(this));
-      FileOps.emptyDir(AppSettings.zipOpenDir(this));
-    }
+    Ui.dismissOpen();
     if (listView != null) {
       listView.setAdapter(null);
     }

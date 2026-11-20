@@ -598,6 +598,7 @@ public final class EditorActivity extends Activity {
   }
   @Override
   protected void onDestroy() {
+    Ui.dismissOpen();
     if (editor != null && scrollL != null) {
       try {
         editor.getViewTreeObserver().removeOnScrollChangedListener(scrollL);

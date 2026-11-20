@@ -44,6 +44,11 @@ public final class SettingsActivity extends Activity {
     setResult(RESULT_OK);
     super.onBackPressed();
   }
+  @Override
+  protected void onDestroy() {
+    Ui.dismissOpen();
+    super.onDestroy();
+  }
   private void backWithoutSave() {
     try {
       if (snap != null && snap.length() > 0) {
@@ -58,7 +63,7 @@ public final class SettingsActivity extends Activity {
     final AppSettings s = AppSettings.get();
     rows.setBackgroundColor(Theme.BG);
     rows.removeAllViews();
-    addHeader(Lang.t("Settings"), "v4.1.28");
+    addHeader(Lang.t("Settings"), "v4.2.0");
     rows.addView(actionBtn(Lang.t("Back without save"), Theme.DANGER, new Runnable() {
       @Override
       public void run() {
@@ -86,14 +91,14 @@ public final class SettingsActivity extends Activity {
       Theme.ACCENT, new Runnable() {
         @Override
         public void run() {
-          pickAccent();
+          pickColor(false);
         }
       }));
     rows.addView(actionBtn(Lang.t("Folder color: ") + AppSettings.ACCENT_NAMES[s.folderColor],
       Theme.ACCENT, new Runnable() {
         @Override
         public void run() {
-          pickFolderColor();
+          pickColor(true);
         }
       }));
     rows.addView(actionBtn(Lang.t("Custom accent") + ": " + Theme.toHex(s.customAccent),
@@ -119,77 +124,18 @@ public final class SettingsActivity extends Activity {
       }
     }));
     addHeader(Lang.t("Custom dark"), null);
-    rows.addView(actionBtn(Lang.t("Custom background") + ": " + Theme.toHex(s.customBg),
-      Theme.ACCENT, new Runnable() {
-        @Override
-        public void run() {
-          pickChrome("bg");
-        }
-      }));
-    rows.addView(actionBtn(Lang.t("Custom text") + ": " + Theme.toHex(s.customText),
-      Theme.ACCENT, new Runnable() {
-        @Override
-        public void run() {
-          pickChrome("text");
-        }
-      }));
-    rows.addView(actionBtn(Lang.t("Custom surface") + ": " + Theme.toHex(s.customSurface),
-      Theme.ACCENT, new Runnable() {
-        @Override
-        public void run() {
-          pickChrome("surface");
-        }
-      }));
-    rows.addView(actionBtn(Lang.t("Custom outline") + ": " + Theme.toHex(s.customStroke),
-      Theme.ACCENT, new Runnable() {
-        @Override
-        public void run() {
-          pickChrome("stroke");
-        }
-      }));
-    rows.addView(actionBtn(Lang.t("Custom selection") + ": " + Theme.toHex(s.customSel),
-      Theme.ACCENT, new Runnable() {
-        @Override
-        public void run() {
-          pickChrome("sel");
-        }
-      }));
+    String[] chromeLabs = {
+      Lang.t("Custom background"), Lang.t("Custom text"), Lang.t("Custom surface"),
+      Lang.t("Custom outline"), Lang.t("Custom selection")
+    };
+    int ci;
+    for (ci = 0; ci < 5; ci++) {
+      addChromeRow(rows, chromeLabs[ci], false, ci);
+    }
     addHeader(Lang.t("Custom light"), null);
-    rows.addView(actionBtn(Lang.t("Custom background") + " (L): " + Theme.toHex(s.customBgL),
-      Theme.ACCENT, new Runnable() {
-        @Override
-        public void run() {
-          pickChrome("bgl");
-        }
-      }));
-    rows.addView(actionBtn(Lang.t("Custom text") + " (L): " + Theme.toHex(s.customTextL),
-      Theme.ACCENT, new Runnable() {
-        @Override
-        public void run() {
-          pickChrome("textl");
-        }
-      }));
-    rows.addView(actionBtn(Lang.t("Custom surface") + " (L): " + Theme.toHex(s.customSurfaceL),
-      Theme.ACCENT, new Runnable() {
-        @Override
-        public void run() {
-          pickChrome("surfl");
-        }
-      }));
-    rows.addView(actionBtn(Lang.t("Custom outline") + " (L): " + Theme.toHex(s.customStrokeL),
-      Theme.ACCENT, new Runnable() {
-        @Override
-        public void run() {
-          pickChrome("strokel");
-        }
-      }));
-    rows.addView(actionBtn(Lang.t("Custom selection") + " (L): " + Theme.toHex(s.customSelL),
-      Theme.ACCENT, new Runnable() {
-        @Override
-        public void run() {
-          pickChrome("sell");
-        }
-      }));
+    for (ci = 0; ci < 5; ci++) {
+      addChromeRow(rows, chromeLabs[ci] + " (L)", true, ci);
+    }
     addHeader(Lang.t("Browser"), "Listing, sort, hidden files");
     rows.addView(toggleBtn(Lang.t("Show hidden files"), s.showHidden, new Runnable() {
       @Override
@@ -314,12 +260,6 @@ public final class SettingsActivity extends Activity {
       }
     }));
     addHeader(Lang.t("Files"), "Open rules for viewer and editor");
-    rows.addView(toggleBtn(Lang.t("Media preview (images/video)"), s.mediaPreview, new Runnable() {
-      @Override
-      public void run() {
-        s.mediaPreview = !s.mediaPreview;
-      }
-    }));
     rows.addView(toggleBtn(Lang.t("Open binary files"), s.openBinary, new Runnable() {
       @Override
       public void run() {
@@ -584,12 +524,6 @@ public final class SettingsActivity extends Activity {
         s.optNoProbe = !s.optNoProbe;
       }
     }));
-    rows.addView(toggleBtn(Lang.t("Disable verified"), s.optNoVerified, new Runnable() {
-      @Override
-      public void run() {
-        s.optNoVerified = !s.optNoVerified;
-      }
-    }));
     rows.addView(toggleBtn(Lang.t("Compress image display"), s.imgCompress, new Runnable() {
       @Override
       public void run() {
@@ -625,12 +559,6 @@ public final class SettingsActivity extends Activity {
       public void run() {
         s.thumbSize = (s.thumbSize + 1) % AppSettings.THUMB_NAMES.length;
         Thumbs.clear();
-      }
-    }));
-    rows.addView(toggleBtn(Lang.t("Clear Incoming / ZipOpen / OpenAs on exit"), s.clearTempsOnExit, new Runnable() {
-      @Override
-      public void run() {
-        s.clearTempsOnExit = !s.clearTempsOnExit;
       }
     }));
     rows.addView(toggleBtn(Lang.t("Disable APK folder icons"), s.optNoPkgIcons, new Runnable() {
@@ -757,37 +685,41 @@ public final class SettingsActivity extends Activity {
     out[out.length - 1] = s.customAccent == 0 ? 0xFF2E7BC7 : s.customAccent;
     return out;
   }
-  private void pickAccent() {
+  private void pickColor(final boolean folder) {
     final AppSettings s = AppSettings.get();
-    Ui.menu(this, Lang.t("Accent color"), AppSettings.ACCENT_NAMES, accentSet(!s.darkTheme), new Ui.OnPick() {
+    String title = Lang.t(folder ? "Folder color" : "Accent color");
+    Ui.menu(this, title, AppSettings.ACCENT_NAMES, accentSet(!s.darkTheme), new Ui.OnPick() {
       @Override
       public void onPick(int w) {
-        s.accentColor = w;
+        if (folder) {
+          s.folderColor = w;
+        } else {
+          s.accentColor = w;
+        }
         if (w == Theme.ACCENTS.length) {
-          pickCustom(false);
+          pickCustom(folder);
           return;
         }
-        Theme.applyAccent(w, s.darkTheme);
+        if (folder) {
+          Icons.clear();
+        } else {
+          Theme.applyAccent(w, s.darkTheme);
+        }
         changed = true;
         saveAndRebuild();
       }
     });
   }
-  private void pickFolderColor() {
-    final AppSettings s = AppSettings.get();
-    Ui.menu(this, Lang.t("Folder color"), AppSettings.ACCENT_NAMES, accentSet(!s.darkTheme), new Ui.OnPick() {
+  private void addChromeRow(LinearLayout rows, String label, final boolean light, final int idx) {
+    AppSettings s = AppSettings.get();
+    int[] slot = light ? s.chromeL : s.chromeD;
+    int cur = (idx >= 0 && idx < slot.length) ? slot[idx] : 0;
+    rows.addView(actionBtn(label + ": " + Theme.toHex(cur), Theme.ACCENT, new Runnable() {
       @Override
-      public void onPick(int w) {
-        s.folderColor = w;
-        if (w == Theme.ACCENTS.length) {
-          pickCustom(true);
-          return;
-        }
-        Icons.clear();
-        changed = true;
-        saveAndRebuild();
+      public void run() {
+        pickChrome(light, idx);
       }
-    });
+    }));
   }
   private void pickCustom(final boolean folder) {
     final AppSettings s = AppSettings.get();
@@ -810,9 +742,13 @@ public final class SettingsActivity extends Activity {
       }
     });
   }
-  private void pickChrome(final String which) {
+  private void pickChrome(final boolean light, final int idx) {
     final AppSettings s = AppSettings.get();
-    final int cur = chromeVal(s, which);
+    final int[] slot = light ? s.chromeL : s.chromeD;
+    if (idx < 0 || idx >= slot.length) {
+      return;
+    }
+    final int cur = slot[idx];
     Ui.input(this, Lang.t("Custom") + " RRGGBB", Theme.toHex(cur), new Ui.OnText() {
       @Override
       public void on(String text) {
@@ -820,7 +756,7 @@ public final class SettingsActivity extends Activity {
         if (c != 0) {
           c = 0xFF000000 | (c & 0xFFFFFF);
         }
-        setChromeVal(s, which, c);
+        slot[idx] = c;
         s.useCustomChrome = true;
         Theme.applyAccent(s.accentColor, s.darkTheme);
         themeChanged = true;
@@ -828,62 +764,6 @@ public final class SettingsActivity extends Activity {
         saveAndRebuild();
       }
     });
-  }
-  private static int chromeVal(AppSettings s, String which) {
-    if ("bg".equals(which)) {
-      return s.customBg;
-    }
-    if ("text".equals(which)) {
-      return s.customText;
-    }
-    if ("surface".equals(which)) {
-      return s.customSurface;
-    }
-    if ("stroke".equals(which)) {
-      return s.customStroke;
-    }
-    if ("sel".equals(which)) {
-      return s.customSel;
-    }
-    if ("bgl".equals(which)) {
-      return s.customBgL;
-    }
-    if ("textl".equals(which)) {
-      return s.customTextL;
-    }
-    if ("surfl".equals(which)) {
-      return s.customSurfaceL;
-    }
-    if ("strokel".equals(which)) {
-      return s.customStrokeL;
-    }
-    if ("sell".equals(which)) {
-      return s.customSelL;
-    }
-    return 0;
-  }
-  private static void setChromeVal(AppSettings s, String which, int c) {
-    if ("bg".equals(which)) {
-      s.customBg = c;
-    } else if ("text".equals(which)) {
-      s.customText = c;
-    } else if ("surface".equals(which)) {
-      s.customSurface = c;
-    } else if ("stroke".equals(which)) {
-      s.customStroke = c;
-    } else if ("sel".equals(which)) {
-      s.customSel = c;
-    } else if ("bgl".equals(which)) {
-      s.customBgL = c;
-    } else if ("textl".equals(which)) {
-      s.customTextL = c;
-    } else if ("surfl".equals(which)) {
-      s.customSurfaceL = c;
-    } else if ("strokel".equals(which)) {
-      s.customStrokeL = c;
-    } else if ("sell".equals(which)) {
-      s.customSelL = c;
-    }
   }
   private void clearAppCache() {
     final File cacheDir = getCacheDir();
@@ -903,6 +783,9 @@ public final class SettingsActivity extends Activity {
         runOnUiThread(new Runnable() {
           @Override
           public void run() {
+            if (isFinishing()) {
+              return;
+            }
             Thumbs.clear();
             Icons.clear();
             Ui.toast(SettingsActivity.this, "Cache cleared: " + FileOps.humanSize(freed));

@@ -116,6 +116,14 @@ public final class TrashActivity extends Activity {
     super.onResume();
     refresh();
   }
+  @Override
+  protected void onDestroy() {
+    if (list != null) {
+      list.setAdapter(null);
+    }
+    Ui.dismissOpen();
+    super.onDestroy();
+  }
   private void refresh() {
     Ui.bg(this, "Scanning trash...", new Runnable() {
       @Override
@@ -126,9 +134,12 @@ public final class TrashActivity extends Activity {
           total += fresh.get(i).size;
         }
         final long totalSize = total;
-        runOnUiThread(new Runnable() {
+          runOnUiThread(new Runnable() {
           @Override
           public void run() {
+            if (isFinishing() || adapter == null) {
+              return;
+            }
             entries.clear();
             entries.addAll(fresh);
             adapter.notifyDataSetChanged();
@@ -194,6 +205,9 @@ public final class TrashActivity extends Activity {
             runOnUiThread(new Runnable() {
               @Override
               public void run() {
+                if (isFinishing()) {
+                  return;
+                }
                 Ui.toast(TrashActivity.this, "Removed " + n[0] + " items");
                 refresh();
               }

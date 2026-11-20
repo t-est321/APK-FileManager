@@ -410,9 +410,6 @@ final class Probe {
   static boolean isSystemPath(String p) {
     return p != null && (p.equals("/data") || p.startsWith("/data/"));
   }
-  static boolean isVerifiedPath(String p) {
-    return p != null && (p.equals("/sys") || p.startsWith("/sys/"));
-  }
   static File[] forPath(Context c, String dirPath) {
     if ("/data".equals(dirPath)) {
       return dataRoot();

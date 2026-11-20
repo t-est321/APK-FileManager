@@ -607,6 +607,7 @@ public final class ViewerActivity extends Activity {
   }
   @Override
   protected void onDestroy() {
+    Ui.dismissOpen();
     progress.removeCallbacks(progressTick);
     if (gif != null) {
       gif.stopMovie();

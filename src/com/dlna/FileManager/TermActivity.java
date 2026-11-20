@@ -17,6 +17,14 @@ public final class TermActivity extends Activity {
   private TextView out;
   private EditText in;
   private ScrollView sc;
+  private final Runnable jumpRun = new Runnable() {
+    @Override
+    public void run() {
+      if (sc != null) {
+        sc.fullScroll(View.FOCUS_DOWN);
+      }
+    }
+  };
   @Override
   protected void onCreate(Bundle b) {
     AppSettings.load(this);
@@ -119,6 +127,14 @@ public final class TermActivity extends Activity {
     prompt();
     OpLog.info(this, "term open " + sh.cwd.getAbsolutePath());
   }
+  @Override
+  protected void onDestroy() {
+    if (sc != null) {
+      sc.removeCallbacks(jumpRun);
+    }
+    Ui.dismissOpen();
+    super.onDestroy();
+  }
   private void prompt() {
     out.append(sh.cwd.getAbsolutePath() + " $ ");
     jump();
@@ -146,11 +162,6 @@ public final class TermActivity extends Activity {
     prompt();
   }
   private void jump() {
-    sc.post(new Runnable() {
-      @Override
-      public void run() {
-        sc.fullScroll(View.FOCUS_DOWN);
-      }
-    });
+    sc.post(jumpRun);
   }
 }

@@ -28,12 +28,13 @@ final class Theme {
       preset = true;
     }
     int[] set = ACCENTS[preset ? idx : 0];
-    int custom = 0xFF6CB6FF;
+    AppSettings st = null;
     try {
-      custom = AppSettings.get().customAccent;
+      st = AppSettings.get();
     } catch (Exception ignored) {}
-    if (custom == 0) {
-      custom = 0xFF6CB6FF;
+    int custom = 0xFF6CB6FF;
+    if (st != null && st.customAccent != 0) {
+      custom = st.customAccent;
     }
     if (dark) {
       BG = 0xFF000000;
@@ -64,22 +65,21 @@ final class Theme {
     }
     SEL = ACCENT_SOFT;
     STROKE = ACCENT_SOFT;
-    try {
-      AppSettings st = AppSettings.get();
-      if (st.useCustomChrome) {
-        if (dark) {
-          paintChrome(st.customBg, st.customText, st.customSurface, st.customStroke, st.customSel);
-        } else {
-          paintChrome(st.customBgL, st.customTextL, st.customSurfaceL, st.customStrokeL, st.customSelL);
-        }
-      }
-    } catch (Exception ignored) {}
+    if (st != null && st.useCustomChrome) {
+      paintChrome(dark ? st.chromeD : st.chromeL);
+    }
   }
   private static int opaque(int c) {
     if (c == 0) {
       return 0;
     }
     return 0xFF000000 | (c & 0xFFFFFF);
+  }
+  private static void paintChrome(int[] c) {
+    if (c == null || c.length < 5) {
+      return;
+    }
+    paintChrome(c[0], c[1], c[2], c[3], c[4]);
   }
   private static void paintChrome(int bg, int text, int surface, int stroke, int sel) {
     bg = opaque(bg);

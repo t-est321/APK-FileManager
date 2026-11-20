@@ -7,7 +7,6 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
-import java.lang.ref.WeakReference;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +20,8 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 final class Ui {
   interface OnText {
     void on(String text);
@@ -28,7 +29,31 @@ final class Ui {
   interface OnPick {
     void onPick(int which);
   }
+  private static final ArrayList<WeakReference<Dialog>> OPEN = new ArrayList<WeakReference<Dialog>>();
   private Ui() {}
+  static void dismissOpen() {
+    int i;
+    for (i = 0; i < OPEN.size(); i++) {
+      Dialog d = OPEN.get(i).get();
+      if (d != null && d.isShowing()) {
+        try {
+          d.dismiss();
+        } catch (Exception ignored) {}
+      }
+    }
+    OPEN.clear();
+  }
+  private static void pruneOpen() {
+    int i = 0;
+    while (i < OPEN.size()) {
+      Dialog d = OPEN.get(i).get();
+      if (d == null || !d.isShowing()) {
+        OPEN.remove(i);
+      } else {
+        i++;
+      }
+    }
+  }
   static void applyTheme(Activity a) {
     AppSettings s = AppSettings.get();
     Theme.applyAccent(s.accentColor, s.darkTheme);
@@ -115,6 +140,7 @@ final class Ui {
     return t;
   }
   static Dialog showBox(Context c, View root) {
+    pruneOpen();
     Dialog d = new Dialog(c);
     d.requestWindowFeature(Window.FEATURE_NO_TITLE);
     FrameLayout outer = new FrameLayout(c);
@@ -124,6 +150,7 @@ final class Ui {
       FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
     d.setContentView(outer);
     d.show();
+    OPEN.add(new WeakReference<Dialog>(d));
     Window w = d.getWindow();
     if (w != null) {
       w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));

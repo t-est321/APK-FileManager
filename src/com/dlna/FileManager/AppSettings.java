@@ -54,11 +54,10 @@ final class AppSettings {
   long openSizeCustom = 524288L;
   boolean optNoThumbs = false;
   boolean optNoProbe = false;
-  boolean optNoVerified = false;
   boolean langRu = false;
   boolean optNoArchiveBrowse = false;
   boolean optNoHtml = false;
-  boolean optNoLog = false;
+  boolean optNoLog = true;
   boolean optNoRound = false;
   boolean optNoPkgIcons = false;
   boolean optNoSha256 = false;
@@ -70,7 +69,7 @@ final class AppSettings {
   boolean hideRail = false;
   boolean hideTerm = false;
   boolean hideStats = false;
-  boolean hideLog = false;
+  boolean hideLog = true;
   boolean hidePath = false;
   boolean hideShare = false;
   boolean hideCopyPath = false;
@@ -80,22 +79,25 @@ final class AppSettings {
   int trashDayIdx = 2;
   boolean confirmOverwrite = false;
   boolean imgCompress = false;
-  boolean useCustomChrome = true;
-  int customBg = 0xFF000000;
-  int customText = 0xFFEDEDED;
-  int customSurface = 0xFF080423;
-  int customStroke = 0xFF050218;
-  int customSel = 0xFF050218;
-  int customBgL = 0xFFE9E9E9;
-  int customTextL = 0xFF000000;
-  int customSurfaceL = 0xFFFFFFFF;
-  int customStrokeL = 0xFF808080;
-  int customSelL = 0xFFC9C0FF;
+  boolean useCustomChrome = false;
+  static final int[] CHROME_DEF_D = new int[]{
+    0xFF000000, 0xFFEDEDED, 0xFF080423, 0xFF050218, 0xFF050218
+  };
+  static final int[] CHROME_DEF_L = new int[]{
+    0xFFE9E9E9, 0xFF000000, 0xFFFFFFFF, 0xFF808080, 0xFFC9C0FF
+  };
+  private static final String[] CHROME_K_D = new String[]{
+    "customBg", "customText", "customSurface", "customStroke", "customSel"
+  };
+  private static final String[] CHROME_K_L = new String[]{
+    "customBgL", "customTextL", "customSurfaceL", "customStrokeL", "customSelL"
+  };
+  int[] chromeD = CHROME_DEF_D.clone();
+  int[] chromeL = CHROME_DEF_L.clone();
   int thumbSize = 1;
   int editorTabIdx = 1;
   boolean editorSpaces = true;
   boolean editorLineNo = true;
-  boolean clearTempsOnExit = false;
   int lastTab = 2;
   int svgResIdx = 3;
   boolean svgGrads = true;
@@ -108,7 +110,7 @@ final class AppSettings {
   int extOff = 0;
   boolean htmlJs = true;
   boolean htmlDom = true;
-  boolean htmlZoom = true;
+  boolean htmlZoom = false;
   boolean htmlImages = true;
   boolean htmlShowBar = true;
   boolean htmlHideBar = false;
@@ -370,7 +372,6 @@ final class AppSettings {
       j.put("openSizeCustom", openSizeCustom);
       j.put("optNoThumbs", optNoThumbs);
       j.put("optNoProbe", optNoProbe);
-      j.put("optNoVerified", optNoVerified);
       j.put("langRu", langRu);
       j.put("optNoArchiveBrowse", optNoArchiveBrowse);
       j.put("optNoHtml", optNoHtml);
@@ -397,21 +398,15 @@ final class AppSettings {
       j.put("confirmOverwrite", confirmOverwrite);
       j.put("imgCompress", imgCompress);
       j.put("useCustomChrome", useCustomChrome);
-      j.put("customBg", customBg & 0xFFFFFFFFL);
-      j.put("customText", customText & 0xFFFFFFFFL);
-      j.put("customSurface", customSurface & 0xFFFFFFFFL);
-      j.put("customStroke", customStroke & 0xFFFFFFFFL);
-      j.put("customSel", customSel & 0xFFFFFFFFL);
-      j.put("customBgL", customBgL & 0xFFFFFFFFL);
-      j.put("customTextL", customTextL & 0xFFFFFFFFL);
-      j.put("customSurfaceL", customSurfaceL & 0xFFFFFFFFL);
-      j.put("customStrokeL", customStrokeL & 0xFFFFFFFFL);
-      j.put("customSelL", customSelL & 0xFFFFFFFFL);
+      int ci;
+      for (ci = 0; ci < 5; ci++) {
+        j.put(CHROME_K_D[ci], chromeD[ci] & 0xFFFFFFFFL);
+        j.put(CHROME_K_L[ci], chromeL[ci] & 0xFFFFFFFFL);
+      }
       j.put("thumbSize", thumbSize);
       j.put("editorTabIdx", editorTabIdx);
       j.put("editorSpaces", editorSpaces);
       j.put("editorLineNo", editorLineNo);
-      j.put("clearTempsOnExit", clearTempsOnExit);
       j.put("lastTab", lastTab);
       j.put("svgResIdx", svgResIdx);
       j.put("svgGrads", svgGrads);
@@ -498,7 +493,6 @@ final class AppSettings {
     }
     optNoThumbs = j.optBoolean("optNoThumbs", optNoThumbs);
     optNoProbe = j.optBoolean("optNoProbe", optNoProbe);
-    optNoVerified = j.optBoolean("optNoVerified", optNoVerified);
     langRu = j.optBoolean("langRu", langRu);
     optNoArchiveBrowse = j.optBoolean("optNoArchiveBrowse", optNoArchiveBrowse);
     optNoHtml = j.optBoolean("optNoHtml", optNoHtml);
@@ -528,16 +522,11 @@ final class AppSettings {
     confirmOverwrite = j.optBoolean("confirmOverwrite", confirmOverwrite);
     imgCompress = j.optBoolean("imgCompress", imgCompress);
     useCustomChrome = j.optBoolean("useCustomChrome", useCustomChrome);
-    customBg = (int) j.optLong("customBg", customBg);
-    customText = (int) j.optLong("customText", customText);
-    customSurface = (int) j.optLong("customSurface", customSurface);
-    customStroke = (int) j.optLong("customStroke", customStroke);
-    customSel = (int) j.optLong("customSel", customSel);
-    customBgL = (int) j.optLong("customBgL", customBgL);
-    customTextL = (int) j.optLong("customTextL", customTextL);
-    customSurfaceL = (int) j.optLong("customSurfaceL", customSurfaceL);
-    customStrokeL = (int) j.optLong("customStrokeL", customStrokeL);
-    customSelL = (int) j.optLong("customSelL", customSelL);
+    int ci;
+    for (ci = 0; ci < 5; ci++) {
+      chromeD[ci] = (int) j.optLong(CHROME_K_D[ci], chromeD[ci]);
+      chromeL[ci] = (int) j.optLong(CHROME_K_L[ci], chromeL[ci]);
+    }
     thumbSize = j.optInt("thumbSize", thumbSize);
     if (thumbSize < 0 || thumbSize >= THUMB_PX.length) {
       thumbSize = 1;
@@ -548,7 +537,6 @@ final class AppSettings {
     }
     editorSpaces = j.optBoolean("editorSpaces", editorSpaces);
     editorLineNo = j.optBoolean("editorLineNo", editorLineNo);
-    clearTempsOnExit = j.optBoolean("clearTempsOnExit", clearTempsOnExit);
     lastTab = j.optInt("lastTab", lastTab);
     svgResIdx = j.optInt("svgResIdx", svgResIdx);
     if (svgResIdx < 0 || svgResIdx >= SVG_RES_PX.length) {
@@ -624,7 +612,6 @@ final class AppSettings {
     openSizeCustom = 524288L;
     optNoThumbs = false;
     optNoProbe = false;
-    optNoVerified = false;
     langRu = false;
     optNoArchiveBrowse = false;
     optNoHtml = false;
@@ -640,7 +627,7 @@ final class AppSettings {
     hideRail = false;
     hideTerm = false;
     hideStats = false;
-    hideLog = false;
+    hideLog = true;
     hidePath = false;
     hideShare = false;
     hideCopyPath = false;
@@ -650,22 +637,13 @@ final class AppSettings {
     trashDayIdx = 2;
     confirmOverwrite = false;
     imgCompress = false;
-    useCustomChrome = true;
-    customBg = 0xFF000000;
-    customText = 0xFFEDEDED;
-    customSurface = 0xFF080423;
-    customStroke = 0xFF050218;
-    customSel = 0xFF050218;
-    customBgL = 0xFFE9E9E9;
-    customTextL = 0xFF000000;
-    customSurfaceL = 0xFFFFFFFF;
-    customStrokeL = 0xFF808080;
-    customSelL = 0xFFC9C0FF;
+    useCustomChrome = false;
+    System.arraycopy(CHROME_DEF_D, 0, chromeD, 0, 5);
+    System.arraycopy(CHROME_DEF_L, 0, chromeL, 0, 5);
     thumbSize = 1;
     editorTabIdx = 1;
     editorSpaces = true;
     editorLineNo = true;
-    clearTempsOnExit = false;
     lastTab = 2;
     svgResIdx = 3;
     svgGrads = true;
@@ -678,7 +656,7 @@ final class AppSettings {
     extOff = 0;
     htmlJs = true;
     htmlDom = true;
-    htmlZoom = true;
+    htmlZoom = false;
     htmlImages = true;
     htmlShowBar = true;
     htmlHideBar = false;
