@@ -5,7 +5,7 @@
 Lightweight Android file manager. Java 7, no XML layouts, no AppCompat.
 
 **Package:** `com.dlna.FileManager`  
-**Version:** 4.1.28 (versionCode 68)  
+**Version:** 4.2.0 (versionCode 69)  
 **SDK:** min 19 / target 29
 
 ---
@@ -14,8 +14,8 @@ Lightweight Android file manager. Java 7, no XML layouts, no AppCompat.
 
 | File | What it is |
 |---|---|
-| [`fileManager_016app.apk`](bin/fileManager_016app.apk) | **Signed** APK — install on a device |
-| [`fileManager_016app-unsigned.apk`](bin/fileManager_016app-unsigned.apk) | **Unsigned** APK — sign yourself before install |
+| `fileManager_016app.apk` | **Signed** APK — install on a device |
+| `fileManager_016app-unsigned.apk` | **Unsigned** APK — sign yourself before install |
 
 ---
 
@@ -33,7 +33,7 @@ Lightweight Android file manager. Java 7, no XML layouts, no AppCompat.
 - Custom Dark / light theme 
 - Settings saved on Back; **Back without save** discards changes
 - Backup export/import under `APP_DATA/com.dlna.FileManager/`
-- USB / MicroSD via `StorageManager.getStorageVolumes()` and `getExternalFilesDirs`
+- USB / MicroSD via `StorageManager.getStorageVolumes()` and `getExternalFilesDirs` (it's a demo function)
 
 ---
 
