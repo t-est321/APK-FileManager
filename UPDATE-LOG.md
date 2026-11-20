@@ -4,7 +4,6 @@
 - HTML zoom off by default (`htmlZoom = false`).
 - Hide Log button on by default (`hideLog = true`).
 - **Disable verified** removed (`optNoVerified` / `/sys` probe skip).
-- Media preview toggle removed from Settings (preview stays on).
 - Clear Incoming / ZipOpen / OpenAs on exit removed.
 - Dead Lang keys removed (`Show details`, `Show folder counts`, `Dark`, `Light`).
 - Dead compact ternary `4 : 4` removed.
