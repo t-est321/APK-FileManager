@@ -5,7 +5,7 @@
 Lightweight Android file manager. Java 7, no XML layouts, no AppCompat.
 
 **Package:** `com.dlna.FileManager`  
-**Version:** 4.2.0 (versionCode 69)  
+**Version:** 4.2.1 (versionCode 70)  
 **SDK:** min 19 / target 29
 
 ---
@@ -22,18 +22,21 @@ Lightweight Android file manager. Java 7, no XML layouts, no AppCompat.
 ## Features
 
 - Browse storage, tabs, bookmarks, search (`*` glob)
-- Copy / move / rename (batch) / delete (trash)
+- Copy / move / rename (batch: replace name, find/replace, prefix, suffix, extension) / delete (trash)
 - ZIP, TAR, TAR.GZ — pack, browse in-place, extract
 - HashMap `.dat` — pack, browse (`file.dat#/…`), edit entries, unpack
-- Text / hex editor, markdown viewer, HTML viewer
+- Archive entries opened for view are cached in RAM (bounded)
+- Text editor, markdown viewer, HTML viewer
 - Images (pinch-zoom, GIF, next/prev), video/audio
 - APK install from the row menu (user action only)
 - Built-in shell (cd, ls, cat, cp, mv, rm, mkdir, …)
 - Dark / light theme, EN / RU
-- Custom Dark / light theme 
+- Custom dark / light chrome colors
 - Settings saved on Back; **Back without save** discards changes
 - Backup export/import under `APP_DATA/com.dlna.FileManager/`
 - USB / MicroSD via `StorageManager.getStorageVolumes()` and `getExternalFilesDirs` (it's a demo function)
+- Info shows heap / RAM (can be hidden in Optimization)
+- Disable system probes skips `/data` and `/sys`
 
 ---
 
