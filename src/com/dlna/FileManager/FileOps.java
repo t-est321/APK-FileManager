@@ -736,13 +736,16 @@ final class FileOps {
     }
   }
   static void writeString(File f, String s) throws IOException {
+    writeBytes(f, s.getBytes("UTF-8"));
+  }
+  static void writeBytes(File f, byte[] b) throws IOException {
     File parent = f.getParentFile();
     if (parent != null && !parent.exists()) {
       parent.mkdirs();
     }
     FileOutputStream out = new FileOutputStream(f);
     try {
-      out.write(s.getBytes("UTF-8"));
+      out.write(b);
     } finally {
       out.close();
     }

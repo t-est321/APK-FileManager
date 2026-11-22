@@ -11,16 +11,21 @@ final class Stats {
     long ms;
   }
   private Stats() {}
-  static String build(Context c) {
+  static String memLine() {
     Runtime rt = Runtime.getRuntime();
-    long heapTotal = rt.totalMemory();
-    long heapFree = rt.freeMemory();
+    long free = rt.freeMemory();
+    long used = rt.totalMemory() - free;
+    return "Used: " + FileOps.humanSize(used) + "\nFree: " + FileOps.humanSize(free)
+      + "\nRAM: " + FileOps.humanSize(rt.maxMemory());
+  }
+  static String build(Context c) {
     StringBuilder sb = new StringBuilder(256);
-    sb.append("[ Heap ]\n");
-    sb.append("Used: ").append(FileOps.humanSize(heapTotal - heapFree)).append('\n');
-    sb.append("Free: ").append(FileOps.humanSize(heapFree)).append('\n');
-    sb.append("Total: ").append(FileOps.humanSize(heapTotal));
-    sb.append("\n\n[ Storage ]\n");
+    if (!AppSettings.get().optNoHeap) {
+      sb.append("[ Heap ]\n");
+      sb.append(memLine());
+      sb.append("\n\n");
+    }
+    sb.append("[ Storage ]\n");
     sb.append(storageLine("External", Environment.getExternalStorageDirectory()));
     sb.append(storageLine("Internal", c.getFilesDir()));
     File appDir = c.getFilesDir().getParentFile();

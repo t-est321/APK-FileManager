@@ -783,9 +783,11 @@ public final class MainActivity extends Activity {
         }
       } else {
         File[] arr = FileOps.list(currentDir, s.showHidden, s.sortMode, s.foldersFirst);
-        File[] probed = Probe.forPath(this, dirPath);
-        if (Probe.isSystemPath(dirPath) && s.optNoProbe) {
+        File[] probed;
+        if (s.optNoProbe && Probe.isSystemPath(dirPath)) {
           probed = new File[0];
+        } else {
+          probed = Probe.forPath(this, dirPath);
         }
         if (FileOps.isCacheRoot(currentDir)) {
           arr = new File[0];
@@ -1224,35 +1226,102 @@ public final class MainActivity extends Activity {
       Ui.toast(this, "Nothing selected");
       return;
     }
-    Ui.input(this, "Prefix for selected names:", "", new Ui.OnText() {
-      @Override
-      public void on(String prefix) {
-        if (prefix.indexOf('/') >= 0) {
-          Ui.toast(MainActivity.this, "Invalid prefix");
-          return;
+    Ui.menu(this, Lang.t("Rename batch"),
+      new String[]{"Replace name", "Find / replace", "Prefix", "Suffix", "Extension"},
+      new int[]{Theme.ACCENT, Theme.ACCENT, Theme.TEXT, Theme.TEXT, Theme.GOOD},
+      new Ui.OnPick() {
+        @Override
+        public void onPick(int w) {
+          if (w == 1) {
+            Ui.input(MainActivity.this, Lang.t("Find"), "", new Ui.OnText() {
+              @Override
+              public void on(String find) {
+                Ui.input(MainActivity.this, Lang.t("Replace with"), "", new Ui.OnText() {
+                  @Override
+                  public void on(String repl) {
+                    batchRename(1, find, repl);
+                  }
+                });
+              }
+            });
+            return;
+          }
+          final int mode = w;
+          String title = w == 0 ? "New name" : (w == 2 ? "Prefix" : (w == 3 ? "Suffix" : "Extension"));
+          Ui.input(MainActivity.this, Lang.t(title), "", new Ui.OnText() {
+            @Override
+            public void on(String text) {
+              batchRename(mode, text, "");
+            }
+          });
         }
-        File[] srcs = selectedFiles();
-        int n = 0;
-        int i;
-        for (i = 0; i < srcs.length; i++) {
-          File src = srcs[i];
-          if (src == null || blocked(src)) {
-            continue;
-          }
-          File parent = src.getParentFile();
-          if (parent == null) {
-            continue;
-          }
-          String name = prefix + src.getName();
-          File dst = new File(parent, TrashStore.uniqueName(parent, name));
-          if (src.renameTo(dst)) {
-            n++;
-          }
-        }
-        Ui.toast(MainActivity.this, "Renamed " + n);
-        refresh();
+      });
+  }
+  private void batchRename(int mode, String a, String b) {
+    if (a == null) {
+      a = "";
+    }
+    if (b == null) {
+      b = "";
+    }
+    if (a.indexOf('/') >= 0 || b.indexOf('/') >= 0) {
+      Ui.toast(this, "Invalid name");
+      return;
+    }
+    File[] srcs = selectedFiles();
+    int n = 0;
+    int seq = 0;
+    int i;
+    for (i = 0; i < srcs.length; i++) {
+      File src = srcs[i];
+      if (src == null || blocked(src)) {
+        continue;
       }
-    });
+      File parent = src.getParentFile();
+      if (parent == null) {
+        continue;
+      }
+      String old = src.getName();
+      String next = batchName(mode, old, a, b, srcs.length, seq);
+      if (next == null || next.length() == 0 || next.equals(old) || next.indexOf('/') >= 0) {
+        continue;
+      }
+      seq++;
+      File dst = new File(parent, TrashStore.uniqueName(parent, next));
+      if (src.renameTo(dst)) {
+        n++;
+      }
+    }
+    Ui.toast(this, "Renamed " + n);
+    refresh();
+  }
+  private static String batchName(int mode, String old, String a, String b, int total, int seq) {
+    int dot = old.lastIndexOf('.');
+    String stem = dot > 0 ? old.substring(0, dot) : old;
+    String ext = dot > 0 ? old.substring(dot) : "";
+    if (mode == 0) {
+      if (total <= 1) {
+        return a;
+      }
+      return a + "-" + (seq + 1) + ext;
+    }
+    if (mode == 1) {
+      if (a.length() == 0) {
+        return old;
+      }
+      return old.replace(a, b);
+    }
+    if (mode == 2) {
+      return a + old;
+    }
+    if (mode == 3) {
+      return stem + a + ext;
+    }
+    String ne = a;
+    if (ne.startsWith(".")) {
+      ne = ne.substring(1);
+    }
+    return stem + (ne.length() == 0 ? "" : "." + ne);
   }
   private File[] selectedFiles() {
     File[] out = new File[selected.size()];
@@ -1563,8 +1632,10 @@ public final class MainActivity extends Activity {
       bcol.add(Integer.valueOf(Theme.GOOD));
       bit.add("Delete");
       bcol.add(Integer.valueOf(Theme.DANGER));
-      bit.add("Info");
-      bcol.add(Integer.valueOf(Theme.TEXT));
+      if (!AppSettings.get().hideInfo) {
+        bit.add("Info");
+        bcol.add(Integer.valueOf(Theme.TEXT));
+      }
       final String[] bitems = bit.toArray(new String[bit.size()]);
       int[] bcolors = new int[bcol.size()];
       for (int bi = 0; bi < bcol.size(); bi++) {
@@ -1633,8 +1704,10 @@ public final class MainActivity extends Activity {
     }
     it.add("Marks");
     col.add(Integer.valueOf(Theme.GOOD));
-    it.add("Info");
-    col.add(Integer.valueOf(Theme.TEXT));
+    if (!st.hideInfo) {
+      it.add("Info");
+      col.add(Integer.valueOf(Theme.TEXT));
+    }
     if (!st.hideCopyPath) {
       it.add("Copy path");
       col.add(Integer.valueOf(Theme.ACCENT));
@@ -2017,6 +2090,7 @@ public final class MainActivity extends Activity {
         long sz = zn != null ? zn.size : (mn != null ? mn.size : 0L);
         sb.append("Archive entry\n");
         sb.append("Size: ").append(FileOps.humanSize(sz)).append('\n');
+        appendMem(sb);
         Ui.alert(this, f.getName(), sb.toString(), true);
         return;
       }
@@ -2024,23 +2098,23 @@ public final class MainActivity extends Activity {
       sb.append("Modified: ").append(fmt.format(new Date(f.lastModified()))).append('\n');
       sb.append("Readable: ").append(f.canRead() ? "yes" : "no").append('\n');
       sb.append("Writable: ").append(f.canWrite() ? "yes" : "no");
+      appendMem(sb);
       if (AppSettings.get().optNoSha256) {
         Ui.alert(this, f.getName(), sb.toString(), true);
         return;
       }
-      final File infoFile = f;
       final String[] out = new String[1];
       out[0] = sb.toString();
       Ui.bg(this, "Hash...", new Runnable() {
         @Override
         public void run() {
           long cap = 4194304L;
-          String hx = FileOps.sha256File(infoFile, cap);
+          String hx = FileOps.sha256File(target, cap);
           if (hx.length() == 0) {
             return;
           }
           String extra = "\nSHA-256: " + hx;
-          if (infoFile.length() > cap) {
+          if (target.length() > cap) {
             extra = extra + "  (first 4 MB)";
           }
           out[0] = out[0] + extra;
@@ -2048,7 +2122,7 @@ public final class MainActivity extends Activity {
       }, new Runnable() {
         @Override
         public void run() {
-          Ui.alert(MainActivity.this, infoFile.getName(), out[0], true);
+          Ui.alert(MainActivity.this, target.getName(), out[0], true);
         }
       });
       return;
@@ -2068,6 +2142,7 @@ public final class MainActivity extends Activity {
             sb.append("Size: ").append(FileOps.humanSize(zn.size)).append('\n');
           }
           sb.append("Time: ").append(System.currentTimeMillis() - t0).append(" ms");
+          appendMem(sb);
           out[0] = sb.toString();
           return;
         }
@@ -2079,6 +2154,7 @@ public final class MainActivity extends Activity {
         sb.append("Writable: ").append(target.canWrite() ? "yes" : "no").append('\n');
         sb.append("Listable: ").append(FileOps.canList(target) ? "yes" : "no").append('\n');
         sb.append("Time: ").append(sc.ms).append(" ms");
+        appendMem(sb);
         out[0] = sb.toString();
       }
     }, new Runnable() {
@@ -2087,6 +2163,12 @@ public final class MainActivity extends Activity {
         Ui.alert(MainActivity.this, target.getName(), out[0] == null ? "" : out[0], true);
       }
     });
+  }
+  private static void appendMem(StringBuilder sb) {
+    if (AppSettings.get().optNoHeap) {
+      return;
+    }
+    sb.append('\n').append(Stats.memLine());
   }
   private void showInfoMany(final File[] srcs) {
     final String[] out = new String[1];
@@ -2102,6 +2184,7 @@ public final class MainActivity extends Activity {
         sb.append("Folders: ").append(t.dirs).append('\n');
         sb.append("Size: ").append(FileOps.humanSize(t.bytes)).append('\n');
         sb.append("Time: ").append(System.currentTimeMillis() - t0).append(" ms");
+        appendMem(sb);
         out[0] = sb.toString();
       }
     }, new Runnable() {
@@ -2165,12 +2248,25 @@ public final class MainActivity extends Activity {
     File zip = ZipBrowse.zipOf(f.getAbsolutePath());
     String inner = ZipBrowse.innerOf(f.getAbsolutePath());
     File dest = new File(AppSettings.zipOpenDir(this), stemOf(zip.getName()));
+    File out = new File(dest, inner);
+    byte[] ram = ZipBrowse.viewBytes(zip, inner);
+    if (ram != null) {
+      File parent = out.getParentFile();
+      if (parent != null) {
+        parent.mkdirs();
+      }
+      try {
+        FileOps.writeBytes(out, ram);
+        return out;
+      } catch (Exception e) {
+        return null;
+      }
+    }
     try {
       ZipBrowse.extract(zip, new String[]{inner}, dest);
     } catch (Exception e) {
       return null;
     }
-    File out = new File(dest, inner);
     return out.exists() ? out : dest;
   }
   private void openZipEntry(File f) {

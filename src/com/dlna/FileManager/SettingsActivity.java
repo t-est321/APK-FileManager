@@ -63,7 +63,7 @@ public final class SettingsActivity extends Activity {
     final AppSettings s = AppSettings.get();
     rows.setBackgroundColor(Theme.BG);
     rows.removeAllViews();
-    addHeader(Lang.t("Settings"), "v4.2.0");
+    addHeader(Lang.t("Settings"), "v4.2.1");
     rows.addView(actionBtn(Lang.t("Back without save"), Theme.DANGER, new Runnable() {
       @Override
       public void run() {
@@ -227,6 +227,10 @@ public final class SettingsActivity extends Activity {
     rows.addView(toggleBtn(Lang.t("Hide Copy name"), s.hideCopyName, new Runnable() {
       @Override
       public void run() { s.hideCopyName = !s.hideCopyName; }
+    }));
+    rows.addView(toggleBtn(Lang.t("Hide Info"), s.hideInfo, new Runnable() {
+      @Override
+      public void run() { s.hideInfo = !s.hideInfo; }
     }));
     addHeader(Lang.t("Interface"), "Fonts, icons, row details");
     rows.addView(cycleBtn(Lang.t("List font: ") + AppSettings.FONT_NAMES[s.listFont], new Runnable() {
@@ -528,6 +532,12 @@ public final class SettingsActivity extends Activity {
       @Override
       public void run() {
         s.optNoProbe = !s.optNoProbe;
+      }
+    }));
+    rows.addView(toggleBtn(Lang.t("Disable heap / RAM"), s.optNoHeap, new Runnable() {
+      @Override
+      public void run() {
+        s.optNoHeap = !s.optNoHeap;
       }
     }));
     rows.addView(toggleBtn(Lang.t("Compress image display"), s.imgCompress, new Runnable() {

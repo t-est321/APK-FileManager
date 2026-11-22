@@ -1,4 +1,5 @@
 package com.dlna.FileManager;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -21,7 +22,10 @@ final class ZipBrowse {
     long time;
   }
   private static final HashMap<String, Node> META = new HashMap<String, Node>();
+  private static final HashMap<String, byte[]> RAM = new HashMap<String, byte[]>();
   private static final int META_MAX = 128;
+  private static final int RAM_MAX = 6;
+  private static final int RAM_EACH = 1572864;
   private ZipBrowse() {}
   static boolean isZipPath(String p) {
     if (p == null || p.length() == 0) {
@@ -64,6 +68,80 @@ final class ZipBrowse {
   }
   static void clear() {
     META.clear();
+    RAM.clear();
+  }
+  static byte[] viewBytes(File zip, String inner) {
+    if (zip == null || inner == null || inner.length() == 0) {
+      return null;
+    }
+    String key = zip.getAbsolutePath() + "\n" + inner;
+    byte[] hit = RAM.get(key);
+    if (hit != null) {
+      return hit;
+    }
+    byte[] b = readInner(zip, inner, RAM_EACH);
+    if (b == null) {
+      return null;
+    }
+    if (RAM.size() >= RAM_MAX) {
+      RAM.remove(RAM.keySet().iterator().next());
+    }
+    RAM.put(key, b);
+    return b;
+  }
+  private static byte[] readInner(File zip, String inner, int max) {
+    if (TarOps.tarName(zip.getName())) {
+      return null;
+    }
+    ZipFile zf = null;
+    InputStream in = null;
+    try {
+      zf = new ZipFile(zip);
+      String want = norm(inner);
+      ZipEntry e = zf.getEntry(inner);
+      if (e == null) {
+        Enumeration<? extends ZipEntry> en = zf.entries();
+        while (en.hasMoreElements()) {
+          ZipEntry x = en.nextElement();
+          if (want.equals(norm(x.getName())) && !x.isDirectory()) {
+            e = x;
+            break;
+          }
+        }
+      }
+      if (e == null || e.isDirectory()) {
+        return null;
+      }
+      if (e.getSize() > max && e.getSize() >= 0L) {
+        return null;
+      }
+      in = zf.getInputStream(e);
+      ByteArrayOutputStream bo = new ByteArrayOutputStream();
+      byte[] buf = new byte[8192];
+      int n;
+      int total = 0;
+      while ((n = in.read(buf)) > 0) {
+        total += n;
+        if (total > max) {
+          return null;
+        }
+        bo.write(buf, 0, n);
+      }
+      return bo.toByteArray();
+    } catch (Exception e) {
+      return null;
+    } finally {
+      if (in != null) {
+        try {
+          in.close();
+        } catch (Exception ignored) {}
+      }
+      if (zf != null) {
+        try {
+          zf.close();
+        } catch (Exception ignored) {}
+      }
+    }
   }
   static File child(File zip, String inner) {
     if (inner == null || inner.length() == 0) {

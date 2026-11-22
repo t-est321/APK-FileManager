@@ -408,7 +408,13 @@ final class Probe {
     return null;
   }
   static boolean isSystemPath(String p) {
-    return p != null && (p.equals("/data") || p.startsWith("/data/"));
+    if (p == null) {
+      return false;
+    }
+    if (p.equals("/data") || p.startsWith("/data/")) {
+      return true;
+    }
+    return p.equals("/sys") || p.startsWith("/sys/");
   }
   static File[] forPath(Context c, String dirPath) {
     if ("/data".equals(dirPath)) {

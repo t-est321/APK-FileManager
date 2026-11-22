@@ -48,7 +48,6 @@ final class AppSettings {
   boolean darkTheme = true;
   int folderColor = 0;
   boolean iconGradient = true;
-  boolean lowRam = false;
   boolean openBinary = false;
   int openSize = 2;
   long openSizeCustom = 524288L;
@@ -61,6 +60,7 @@ final class AppSettings {
   boolean optNoRound = false;
   boolean optNoPkgIcons = false;
   boolean optNoSha256 = false;
+  boolean optNoHeap = false;
   boolean hideNav = false;
   boolean hideMarks = false;
   boolean hideTabs = false;
@@ -74,6 +74,7 @@ final class AppSettings {
   boolean hideShare = false;
   boolean hideCopyPath = false;
   boolean hideCopyName = false;
+  boolean hideInfo = false;
   boolean relDate = false;
   boolean showFolderCounts = true;
   int trashDayIdx = 2;
@@ -366,7 +367,6 @@ final class AppSettings {
       j.put("darkTheme", darkTheme);
       j.put("folderColor", folderColor);
       j.put("iconGradient", iconGradient);
-      j.put("lowRam", lowRam);
       j.put("openBinary", openBinary);
       j.put("openSize", openSize);
       j.put("openSizeCustom", openSizeCustom);
@@ -379,6 +379,7 @@ final class AppSettings {
       j.put("optNoRound", optNoRound);
       j.put("optNoPkgIcons", optNoPkgIcons);
       j.put("optNoSha256", optNoSha256);
+      j.put("optNoHeap", optNoHeap);
       j.put("hideNav", hideNav);
       j.put("hideMarks", hideMarks);
       j.put("hideTabs", hideTabs);
@@ -392,6 +393,7 @@ final class AppSettings {
       j.put("hideShare", hideShare);
       j.put("hideCopyPath", hideCopyPath);
       j.put("hideCopyName", hideCopyName);
+      j.put("hideInfo", hideInfo);
       j.put("relDate", relDate);
       j.put("showFolderCounts", showFolderCounts);
       j.put("trashDayIdx", trashDayIdx);
@@ -481,7 +483,6 @@ final class AppSettings {
     customAccent = (int) j.optLong("customAccent", customAccent);
     customFolder = (int) j.optLong("customFolder", customFolder);
     iconGradient = j.optBoolean("iconGradient", iconGradient);
-    lowRam = j.optBoolean("lowRam", lowRam);
     openBinary = j.optBoolean("openBinary", openBinary);
     openSize = j.optInt("openSize", openSize);
     if (openSize < 0 || openSize >= OPEN_SIZE_NAMES.length) {
@@ -500,6 +501,7 @@ final class AppSettings {
     optNoRound = j.optBoolean("optNoRound", optNoRound);
     optNoPkgIcons = j.optBoolean("optNoPkgIcons", optNoPkgIcons);
     optNoSha256 = j.optBoolean("optNoSha256", optNoSha256);
+    optNoHeap = j.optBoolean("optNoHeap", optNoHeap);
     hideNav = j.optBoolean("hideNav", hideNav);
     hideMarks = j.optBoolean("hideMarks", hideMarks);
     hideTabs = j.optBoolean("hideTabs", hideTabs);
@@ -513,6 +515,7 @@ final class AppSettings {
     hideShare = j.optBoolean("hideShare", hideShare);
     hideCopyPath = j.optBoolean("hideCopyPath", hideCopyPath);
     hideCopyName = j.optBoolean("hideCopyName", hideCopyName);
+    hideInfo = j.optBoolean("hideInfo", hideInfo);
     relDate = j.optBoolean("relDate", relDate);
     showFolderCounts = j.optBoolean("showFolderCounts", showFolderCounts);
     trashDayIdx = j.optInt("trashDayIdx", trashDayIdx);
@@ -606,7 +609,6 @@ final class AppSettings {
     darkTheme = true;
     folderColor = 0;
     iconGradient = true;
-    lowRam = false;
     openBinary = false;
     openSize = 2;
     openSizeCustom = 524288L;
@@ -619,6 +621,7 @@ final class AppSettings {
     optNoRound = false;
     optNoPkgIcons = false;
     optNoSha256 = false;
+    optNoHeap = false;
     hideNav = false;
     hideMarks = false;
     hideTabs = false;
@@ -632,6 +635,7 @@ final class AppSettings {
     hideShare = false;
     hideCopyPath = false;
     hideCopyName = false;
+    hideInfo = false;
     relDate = false;
     showFolderCounts = true;
     trashDayIdx = 2;

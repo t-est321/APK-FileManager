@@ -30,6 +30,15 @@ final class Lang {
     RU.put("Hide Share", "\u0421\u043a\u0440\u044b\u0442\u044c Share");
     RU.put("Hide Copy path", "\u0421\u043a\u0440\u044b\u0442\u044c Copy path");
     RU.put("Hide Copy name", "\u0421\u043a\u0440\u044b\u0442\u044c Copy name");
+    RU.put("Hide Info", "\u0421\u043a\u0440\u044b\u0442\u044c Info");
+    RU.put("Disable heap / RAM", "\u0421\u043a\u0440\u044b\u0442\u044c heap / RAM");
+    RU.put("Replace name", "\u0417\u0430\u043c\u0435\u043d\u0438\u0442\u044c \u0438\u043c\u044f");
+    RU.put("Find / replace", "\u041d\u0430\u0439\u0442\u0438 / \u0437\u0430\u043c\u0435\u043d\u0438\u0442\u044c");
+    RU.put("Prefix", "\u041f\u0440\u0435\u0444\u0438\u043a\u0441");
+    RU.put("Suffix", "\u0421\u0443\u0444\u0444\u0438\u043a\u0441");
+    RU.put("New name", "\u041d\u043e\u0432\u043e\u0435 \u0438\u043c\u044f");
+    RU.put("Find", "\u041d\u0430\u0439\u0442\u0438");
+    RU.put("Replace with", "\u0417\u0430\u043c\u0435\u043d\u0438\u0442\u044c \u043d\u0430");
     RU.put("Interface", "\u0418\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441");
     RU.put("Fonts, icons, row details", "\u0428\u0440\u0438\u0444\u0442\u044b, \u0438\u043a\u043e\u043d\u043a\u0438, \u0434\u0435\u0442\u0430\u043b\u0438");
     RU.put("Show file icons", "\u0418\u043a\u043e\u043d\u043a\u0438 \u0444\u0430\u0439\u043b\u043e\u0432");
