@@ -5,7 +5,7 @@
 Lightweight Android file manager. Java 7, no XML layouts, no AppCompat.
 
 **Package:** `com.dlna.FileManager`  
-**Version:** 4.2.1 (versionCode 70)  
+**Version:** 4.2.2 (versionCode 71)  
 **SDK:** min 19 / target 29
 
 ---
@@ -25,7 +25,9 @@ Lightweight Android file manager. Java 7, no XML layouts, no AppCompat.
 - Copy / move / rename (batch: replace name, find/replace, prefix, suffix, extension) / delete (trash)
 - ZIP, TAR, TAR.GZ — pack, browse in-place, extract
 - HashMap `.dat` — pack, browse (`file.dat#/…`), edit entries, unpack
-- Archive entries opened for view are cached in RAM (bounded)
+- Notes button on the action panel (Hide Notes in settings)
+- Incoming shares and archive entries open in RAM (no cache file); video/audio skip RAM; `file://` opens in place
+- Editor Save on a RAM buffer writes Incoming and toasts Saved; status size uses the buffer length
 - Text editor, markdown viewer, HTML viewer
 - Images (pinch-zoom, GIF, next/prev), video/audio
 - APK install from the row menu (user action only)
@@ -35,7 +37,8 @@ Lightweight Android file manager. Java 7, no XML layouts, no AppCompat.
 - Settings saved on Back; **Back without save** discards changes
 - Backup export/import under `APP_DATA/com.dlna.FileManager/`
 - USB / MicroSD via `StorageManager.getStorageVolumes()` and `getExternalFilesDirs` (it's a demo function)
-- Info shows heap / RAM (can be hidden in Optimization)
+- Info shows heap / RAM for one item (can be hidden in Optimization; Hide Info also covers multi-select)
+- Confirm before closing a tab or removing a bookmark (can be disabled in Safety)
 - Disable system probes skips `/data` and `/sys`
 
 ---
@@ -83,7 +86,7 @@ Alternatively, you can build the application directly via **Code Studio** (avail
 - **Double-tap** — open
 - **⋮** — commands for one item or the selection
 - Path bar — type a path; long-press — Settings
-- Pull down at the top of the list — refresh
+- Pull down at the top of the list — refresh (centered chip, not full width)
 
 Settings, tabs, bookmarks and notes live in the app files dir. Public export:
 
