@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -22,7 +23,8 @@ final class ZipBrowse {
     long time;
   }
   private static final HashMap<String, Node> META = new HashMap<String, Node>();
-  private static final HashMap<String, byte[]> RAM = new HashMap<String, byte[]>();
+  private static final LinkedHashMap<String, byte[]> RAM =
+    new LinkedHashMap<String, byte[]>(16, 0.75f, true);
   private static final int META_MAX = 128;
   private static final int RAM_MAX = 6;
   private static final int RAM_EACH = 1572864;
@@ -74,7 +76,7 @@ final class ZipBrowse {
     if (zip == null || inner == null || inner.length() == 0) {
       return null;
     }
-    String key = zip.getAbsolutePath() + "\n" + inner;
+    String key = ramKey(zip, inner);
     byte[] hit = RAM.get(key);
     if (hit != null) {
       return hit;
@@ -83,11 +85,44 @@ final class ZipBrowse {
     if (b == null) {
       return null;
     }
-    if (RAM.size() >= RAM_MAX) {
-      RAM.remove(RAM.keySet().iterator().next());
+    putRam(key, b);
+    return b;
+  }
+  static String ramKey(File zip, String inner) {
+    if (zip == null || inner == null) {
+      return "";
+    }
+    return zip.getAbsolutePath() + "\n" + inner;
+  }
+  static byte[] getRam(String key) {
+    if (key == null || key.length() == 0) {
+      return null;
+    }
+    return RAM.get(key);
+  }
+  static int ramLimit() {
+    return RAM_EACH;
+  }
+  static String holdRam(String name, byte[] b) {
+    if (name == null || b == null || b.length > RAM_EACH) {
+      return null;
+    }
+    String key = "hold\n" + System.nanoTime() + "\n" + name.replace('/', '_');
+    putRam(key, b);
+    return key;
+  }
+  static void putRam(String key, byte[] b) {
+    if (key == null || b == null) {
+      return;
     }
     RAM.put(key, b);
-    return b;
+    while (RAM.size() > RAM_MAX) {
+      String drop = RAM.keySet().iterator().next();
+      if (key.equals(drop)) {
+        break;
+      }
+      RAM.remove(drop);
+    }
   }
   private static byte[] readInner(File zip, String inner, int max) {
     if (TarOps.tarName(zip.getName())) {

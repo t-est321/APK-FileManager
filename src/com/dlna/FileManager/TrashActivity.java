@@ -121,7 +121,7 @@ public final class TrashActivity extends Activity {
     if (list != null) {
       list.setAdapter(null);
     }
-    Ui.dismissOpen();
+    Ui.dismissOpen(this);
     super.onDestroy();
   }
   private void refresh() {

@@ -50,6 +50,12 @@ final class FileOps {
     fireProg();
   }
   static void clearProg() {
+    clearProg(null);
+  }
+  static void clearProg(Prog mine) {
+    if (mine != null && progCb != mine) {
+      return;
+    }
     progCb = null;
     progDone = 0L;
     progTotal = 0L;
@@ -750,6 +756,27 @@ final class FileOps {
       out.close();
     }
   }
+  static boolean isTextBytes(byte[] buf) {
+    if (buf == null) {
+      return false;
+    }
+    if (buf.length == 0) {
+      return true;
+    }
+    int n = buf.length < 4096 ? buf.length : 4096;
+    int ctrl = 0;
+    int i;
+    for (i = 0; i < n; i++) {
+      int b = buf[i] & 255;
+      if (b == 0) {
+        return false;
+      }
+      if (b < 9 || (b > 13 && b < 32)) {
+        ctrl++;
+      }
+    }
+    return ctrl * 10 < n;
+  }
   static boolean isTextFile(File f) {
     if (f.length() > AppSettings.get().openLimit()) {
       return false;
@@ -762,17 +789,12 @@ final class FileOps {
         if (n <= 0) {
           return true;
         }
-        int ctrl = 0;
-        for (int i = 0; i < n; i++) {
-          int b = buf[i] & 255;
-          if (b == 0) {
-            return false;
-          }
-          if (b < 9 || (b > 13 && b < 32)) {
-            ctrl++;
-          }
+        if (n < buf.length) {
+          byte[] cut = new byte[n];
+          System.arraycopy(buf, 0, cut, 0, n);
+          return isTextBytes(cut);
         }
-        return ctrl * 10 < n;
+        return isTextBytes(buf);
       } finally {
         in.close();
       }

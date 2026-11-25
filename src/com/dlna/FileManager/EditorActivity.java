@@ -25,6 +25,8 @@ public final class EditorActivity extends Activity {
   private File file;
   private String archivePath;
   private String archiveInner;
+  private String ramKey;
+  private long ramLen;
   private EditText editor;
   private TextView gutter;
   private TextView status;
@@ -54,6 +56,10 @@ public final class EditorActivity extends Activity {
     file = new File(path == null ? "" : path);
     archivePath = getIntent().getStringExtra("archive");
     archiveInner = getIntent().getStringExtra("inner");
+    ramKey = getIntent().getStringExtra("ram");
+    if (ramKey != null && ramKey.length() == 0) {
+      ramKey = null;
+    }
     if (archivePath != null && archivePath.length() == 0) {
       archivePath = null;
     }
@@ -267,8 +273,19 @@ public final class EditorActivity extends Activity {
       public void run() {
         try {
           long cap = Math.max(MAX_LOAD, AppSettings.get().openLimit());
-          final boolean cut = file.length() > cap;
-          String raw = FileOps.readStringLimit(file, cap);
+          byte[] ram = ZipBrowse.getRam(ramKey);
+          final boolean cut;
+          String raw;
+          if (ram != null) {
+            ramLen = ram.length;
+            cut = ram.length > cap;
+            int n = ram.length > cap ? (int) cap : ram.length;
+            raw = new String(ram, 0, n, "UTF-8");
+          } else {
+            ramLen = file.length();
+            cut = file.length() > cap;
+            raw = FileOps.readStringLimit(file, cap);
+          }
           if (AppSettings.get().editorSpaces) {
             raw = expandTabs(raw, AppSettings.get().tabSpaces());
           }
@@ -530,7 +547,7 @@ public final class EditorActivity extends Activity {
     Layout lay = editor.getLayout();
     int vis = lay == null ? 0 : lay.getLineForVertical(editor.getScrollY()) + 1;
     status.setText("Ln " + line + "  Col " + col + "  " + t.length() + " chars"
-      + (dirty ? "  *" : "") + "  " + FileOps.humanSize(file.length())
+      + (dirty ? "  *" : "") + "  " + FileOps.humanSize(ramKey != null ? ramLen : file.length())
       + (vis > 0 ? "  top " + vis : "")
       + (truncated ? "  truncated" : "")
       + (t.length() >= HUGE_CHARS ? "  large" : ""));
@@ -563,21 +580,51 @@ public final class EditorActivity extends Activity {
       @Override
       public void run() {
         try {
-          FileOps.writeString(file, text);
+          byte[] data = text.getBytes("UTF-8");
+          final long n = data.length;
+          if (ramKey != null) {
+            ZipBrowse.putRam(ramKey, data);
+          }
+          File nextFile = file;
+          String nextRam = ramKey;
           if (archivePath != null && archiveInner != null) {
+            File src = file;
+            if (ramKey != null) {
+              src = new File(getCacheDir(), "ram-save");
+              FileOps.writeBytes(src, data);
+            } else {
+              FileOps.writeString(file, text);
+            }
             File arch = new File(archivePath);
             if (MapArch.isMap(arch.getName())) {
-              MapBrowse.replace(arch, archiveInner, file);
+              MapBrowse.replace(arch, archiveInner, src);
             } else {
-              ZipBrowse.replaceEntry(arch, archiveInner, file);
+              ZipBrowse.replaceEntry(arch, archiveInner, src);
+            }
+            if (ramKey != null) {
+              src.delete();
             }
             OpLog.info(EditorActivity.this, "save archive " + archiveInner);
-          } else {
+          } else if (ramKey == null) {
+            FileOps.writeString(file, text);
             OpLog.info(EditorActivity.this, "save " + file.getAbsolutePath());
+          } else {
+            File dir = AppSettings.incomingDir(EditorActivity.this);
+            dir.mkdirs();
+            File dst = new File(dir, TrashStore.uniqueName(dir, file.getName()));
+            FileOps.writeBytes(dst, data);
+            nextFile = dst;
+            nextRam = null;
+            OpLog.info(EditorActivity.this, "save " + dst.getAbsolutePath());
           }
+          final File savedFile = nextFile;
+          final String savedRam = nextRam;
           runOnUiThread(new Runnable() {
             @Override
             public void run() {
+              file = savedFile;
+              ramKey = savedRam;
+              ramLen = n;
               dirty = false;
               updateSaveBtn();
               updateStatus();
@@ -598,7 +645,7 @@ public final class EditorActivity extends Activity {
   }
   @Override
   protected void onDestroy() {
-    Ui.dismissOpen();
+    Ui.dismissOpen(this);
     if (editor != null && scrollL != null) {
       try {
         editor.getViewTreeObserver().removeOnScrollChangedListener(scrollL);

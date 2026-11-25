@@ -2,6 +2,7 @@ package com.dlna.FileManager;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -32,16 +33,38 @@ final class Ui {
   private static final ArrayList<WeakReference<Dialog>> OPEN = new ArrayList<WeakReference<Dialog>>();
   private Ui() {}
   static void dismissOpen() {
+    dismissOpen(null);
+  }
+  static void dismissOpen(Context c) {
     int i;
     for (i = 0; i < OPEN.size(); i++) {
       Dialog d = OPEN.get(i).get();
-      if (d != null && d.isShowing()) {
+      if (d != null && d.isShowing() && (c == null || owns(d, c))) {
         try {
           d.dismiss();
         } catch (Exception ignored) {}
       }
     }
-    OPEN.clear();
+    if (c == null) {
+      OPEN.clear();
+    } else {
+      pruneOpen();
+    }
+  }
+  private static boolean owns(Dialog d, Context c) {
+    Context dc = d.getContext();
+    int n = 0;
+    while (dc != null && n < 8) {
+      if (dc == c) {
+        return true;
+      }
+      if (!(dc instanceof ContextWrapper)) {
+        break;
+      }
+      dc = ((ContextWrapper) dc).getBaseContext();
+      n++;
+    }
+    return false;
   }
   private static void pruneOpen() {
     int i = 0;
@@ -415,15 +438,16 @@ final class Ui {
     bar.startAnim();
     final WeakReference<Activity> aref = new WeakReference<Activity>(a);
     final Progress pg = new Progress(a, tv, pct, bar);
+    final FileOps.Prog mine = new FileOps.Prog() {
+      @Override
+      public void on(long done, long total) {
+        pg.set(done, total);
+      }
+    };
     final Thread th = new Thread(new Runnable() {
       @Override
       public void run() {
-        FileOps.progCb = new FileOps.Prog() {
-          @Override
-          public void on(long done, long total) {
-            pg.set(done, total);
-          }
-        };
+        FileOps.progCb = mine;
         try {
           work.run(pg);
         } catch (Exception e) {
@@ -433,7 +457,7 @@ final class Ui {
           }
         } finally {
           FileOps.setCancel(false);
-          FileOps.clearProg();
+          FileOps.clearProg(mine);
           final Activity ui = aref.get();
           if (ui == null) {
             try {
@@ -467,7 +491,7 @@ final class Ui {
       public void onClick(View v) {
         cancelled[0] = true;
         FileOps.setCancel(true);
-        FileOps.clearProg();
+        FileOps.clearProg(mine);
         th.interrupt();
         bar.stopAnim();
         try {

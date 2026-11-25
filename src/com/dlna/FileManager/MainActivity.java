@@ -71,7 +71,6 @@ public final class MainActivity extends Activity {
   private View navBarView;
   private View tabBarView;
   private View findRow;
-  private View hintRow;
   private View railView;
   private boolean tabsReady = false;
   private static final HashMap<String, int[]> scrollAt = new HashMap<String, int[]>();
@@ -146,25 +145,66 @@ public final class MainActivity extends Activity {
     Ui.bg(this, "Loading...", new Runnable() {
       @Override
       public void run() {
-        File got = Incoming.save(MainActivity.this, src);
-        if (got == null || !got.isFile()) {
+        if ("file".equals(src.getScheme())) {
+          String p = src.getPath();
+          if (p != null) {
+            final File local = new File(p);
+            if (local.isFile()) {
+              runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                  openFile(local);
+                }
+              });
+              return;
+            }
+          }
+        }
+        final String name = Incoming.nameOf(MainActivity.this, src);
+        final byte[] ram = Incoming.read(MainActivity.this, src, ZipBrowse.ramLimit());
+        final String key = ram == null ? null : ZipBrowse.holdRam(name, ram);
+        if (key != null) {
           runOnUiThread(new Runnable() {
             @Override
             public void run() {
-              Ui.toast(MainActivity.this, "Open failed");
+              if (openFromRam(name, key, null, null)) {
+                return;
+              }
+              incomingSaveOpen(src);
             }
           });
           return;
         }
-        final File f = got;
-        runOnUiThread(new Runnable() {
-          @Override
-          public void run() {
-            openFile(f);
-          }
-        });
+        incomingSaveFromBg(src);
       }
     }, null);
+  }
+  private void incomingSaveOpen(final Uri src) {
+    Ui.bg(this, "Loading...", new Runnable() {
+      @Override
+      public void run() {
+        incomingSaveFromBg(src);
+      }
+    }, null);
+  }
+  private void incomingSaveFromBg(Uri src) {
+    File got = Incoming.save(this, src);
+    if (got == null || !got.isFile()) {
+      runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+          Ui.toast(MainActivity.this, "Open failed");
+        }
+      });
+      return;
+    }
+    final File f = got;
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        openFile(f);
+      }
+    });
   }
   @Override
   public void onRequestPermissionsResult(int code, String[] p, int[] g) {
@@ -267,11 +307,14 @@ public final class MainActivity extends Activity {
     pullView.setTextColor(Theme.ACCENT);
     pullView.setTextSize(13);
     pullView.setGravity(Gravity.CENTER);
-    pullView.setBackgroundColor(Theme.SURFACE);
-    pullView.setPadding(Theme.dp(this, 8), Theme.dp(this, 8), Theme.dp(this, 8), Theme.dp(this, 8));
+    pullView.setBackground(Theme.rounded(this, Theme.SURFACE, 14));
+    pullView.setPadding(Theme.dp(this, 16), Theme.dp(this, 8), Theme.dp(this, 16), Theme.dp(this, 8));
     pullView.setVisibility(View.GONE);
-    wrap.addView(pullView, new FrameLayout.LayoutParams(
-      FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.TOP));
+    FrameLayout.LayoutParams plp = new FrameLayout.LayoutParams(
+      FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT,
+      Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+    plp.topMargin = Theme.dp(this, 8);
+    wrap.addView(pullView, plp);
     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
       LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
     root.addView(wrap, lp);
@@ -287,7 +330,6 @@ public final class MainActivity extends Activity {
       }
     });
     hintRow.addView(selMenu);
-    this.hintRow = hintRow;
     root.addView(hintRow);
     root.addView(actionsBlock);
     return root;
@@ -578,46 +620,47 @@ public final class MainActivity extends Activity {
   }
   private void rebuildActions() {
     actionsBlock.removeAllViews();
-    Button[] core = new Button[]{
-      actBtn("New File", Theme.ACCENT, new View.OnClickListener() {
-        @Override
-        public void onClick(View v) { createEntry(false); }
-      }),
-      actBtn("New Folder", Theme.ACCENT, new View.OnClickListener() {
-        @Override
-        public void onClick(View v) { createEntry(true); }
-      }),
-      actBtn("Copy", Theme.ACCENT, new View.OnClickListener() {
-        @Override
-        public void onClick(View v) { copySelected(); }
-      }),
-      actBtn("Move", Theme.ACCENT, new View.OnClickListener() {
-        @Override
-        public void onClick(View v) { moveSelected(); }
-      }),
-      actBtn("Refresh", Theme.TEXT, new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-          refresh();
-          Ui.toast(MainActivity.this, "Refreshed");
-        }
-      }),
-      actBtn("Delete", Theme.DANGER, new View.OnClickListener() {
-        @Override
-        public void onClick(View v) { deleteSelected(); }
-      }),
-      actBtn("Trash", Theme.ACCENT, new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-          startActivity(new Intent(MainActivity.this, TrashActivity.class));
-        }
-      })
-    };
     AppSettings st = AppSettings.get();
     ArrayList<Button> all = new ArrayList<Button>();
-    for (int i = 0; i < core.length; i++) {
-      all.add(core[i]);
+    all.add(actBtn("New File", Theme.ACCENT, new View.OnClickListener() {
+      @Override
+      public void onClick(View v) { createEntry(false); }
+    }));
+    all.add(actBtn("New Folder", Theme.ACCENT, new View.OnClickListener() {
+      @Override
+      public void onClick(View v) { createEntry(true); }
+    }));
+    if (!st.hideNotes) {
+      all.add(actBtn("Notes", Theme.GOOD, new View.OnClickListener() {
+        @Override
+        public void onClick(View v) { openNotes(); }
+      }));
     }
+    all.add(actBtn("Copy", Theme.ACCENT, new View.OnClickListener() {
+      @Override
+      public void onClick(View v) { copySelected(); }
+    }));
+    all.add(actBtn("Move", Theme.ACCENT, new View.OnClickListener() {
+      @Override
+      public void onClick(View v) { moveSelected(); }
+    }));
+    all.add(actBtn("Refresh", Theme.TEXT, new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        refresh();
+        Ui.toast(MainActivity.this, "Refreshed");
+      }
+    }));
+    all.add(actBtn("Delete", Theme.DANGER, new View.OnClickListener() {
+      @Override
+      public void onClick(View v) { deleteSelected(); }
+    }));
+    all.add(actBtn("Trash", Theme.ACCENT, new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        startActivity(new Intent(MainActivity.this, TrashActivity.class));
+      }
+    }));
     if (!st.hideTerm) {
       all.add(actBtn("Term", Theme.GOOD, new View.OnClickListener() {
         @Override
@@ -674,6 +717,15 @@ public final class MainActivity extends Activity {
     Intent i = new Intent(this, TermActivity.class);
     i.putExtra("cwd", currentDir == null ? "/" : currentDir.getAbsolutePath());
     startActivity(i);
+  }
+  private void openNotes() {
+    File n = AppSettings.notesFile(this);
+    try {
+      if (!n.exists()) {
+        FileOps.writeString(n, "");
+      }
+    } catch (Exception ignored) {}
+    openEditor(n);
   }
   private void showLog() {
     String text = OpLog.read(this);
@@ -1092,13 +1144,56 @@ public final class MainActivity extends Activity {
     openEditor(f, null, null);
   }
   private void openEditor(File f, File zip, String inner) {
+    openEditor(f, zip, inner, null);
+  }
+  private void openEditor(File f, File zip, String inner, String ramKey) {
     Intent i = new Intent(this, EditorActivity.class);
     i.putExtra("path", f.getAbsolutePath());
     if (zip != null && inner != null && inner.length() > 0) {
       i.putExtra("archive", zip.getAbsolutePath());
       i.putExtra("inner", inner);
     }
+    if (ramKey != null && ramKey.length() > 0) {
+      i.putExtra("ram", ramKey);
+    }
     startActivity(i);
+  }
+  private boolean openFromRam(String name, String ramKey, File zip, String inner) {
+    byte[] ram = ZipBrowse.getRam(ramKey);
+    if (name == null || ramKey == null || ram == null) {
+      return false;
+    }
+    AppSettings s = AppSettings.get();
+    if (ram.length > s.openLimit()) {
+      return false;
+    }
+    if (MdDraw.isMarkdownName(name)) {
+      return false;
+    }
+    String ext = FileOps.ext(name);
+    if (!s.optNoHtml && ("html".equals(ext) || "htm".equals(ext))) {
+      return false;
+    }
+    int kind = Media.of(name);
+    if (kind == Media.VIDEO || kind == Media.AUDIO) {
+      return false;
+    }
+    if (kind == Media.IMAGE) {
+      if (!s.mediaPreview) {
+        return false;
+      }
+      Intent i = new Intent(this, ViewerActivity.class);
+      i.putExtra("path", name);
+      i.putExtra("ram", ramKey);
+      i.putExtra("asImage", true);
+      startActivity(i);
+      return true;
+    }
+    if (!FileOps.extListed(s.extraTextExts, name) && !FileOps.isTextBytes(ram) && !s.openBinary) {
+      return false;
+    }
+    openEditor(new File(name), zip, inner, ramKey);
+    return true;
   }
   private void createEntry(final boolean folder) {
     Ui.input(this, folder ? "New folder name:" : "New file name:", "", new Ui.OnText() {
@@ -1593,21 +1688,35 @@ public final class MainActivity extends Activity {
     boolean bulk = selected.size() > 1 && selected.contains(f.getAbsolutePath());
     if (bulk) {
       if (ZipBrowse.isZipPath(f.getAbsolutePath())) {
-        Ui.menu(this, selected.size() + " items",
-          new String[]{"Extract", "Copy to...", "Info"},
-          new int[]{Theme.GOOD, Theme.ACCENT, Theme.TEXT},
-          new Ui.OnPick() {
-            @Override
-            public void onPick(int w) {
-              if (w == 0) {
-                extractZipSelected();
-              } else if (w == 1) {
-                copyArchiveTo(f);
-              } else {
-                showInfo(f);
-              }
+        ArrayList<String> zit = new ArrayList<String>();
+        ArrayList<Integer> zcol = new ArrayList<Integer>();
+        zit.add("Extract");
+        zcol.add(Integer.valueOf(Theme.GOOD));
+        zit.add("Copy to...");
+        zcol.add(Integer.valueOf(Theme.ACCENT));
+        if (!AppSettings.get().hideInfo) {
+          zit.add("Info");
+          zcol.add(Integer.valueOf(Theme.TEXT));
+        }
+        final String[] zitems = zit.toArray(new String[zit.size()]);
+        int[] zcolors = new int[zcol.size()];
+        int zi;
+        for (zi = 0; zi < zcol.size(); zi++) {
+          zcolors[zi] = zcol.get(zi).intValue();
+        }
+        Ui.menu(this, selected.size() + " items", zitems, zcolors, new Ui.OnPick() {
+          @Override
+          public void onPick(int w) {
+            String cmd = zitems[w];
+            if ("Extract".equals(cmd)) {
+              extractZipSelected();
+            } else if ("Copy to...".equals(cmd)) {
+              copyArchiveTo(f);
+            } else {
+              showInfo(f);
             }
-          });
+          }
+        });
         return;
       }
       ArrayList<String> bit = new ArrayList<String>();
@@ -1888,6 +1997,17 @@ public final class MainActivity extends Activity {
     }
   }
   private void openAsImage(File src) {
+    if (ZipBrowse.isZipPath(src.getAbsolutePath())) {
+      File zip = ZipBrowse.zipOf(src.getAbsolutePath());
+      String inner = ZipBrowse.innerOf(src.getAbsolutePath());
+      byte[] ram = ZipBrowse.viewBytes(zip, inner);
+      if (ram != null) {
+        String name = new File(inner).getName();
+        if (openFromRam(name, ZipBrowse.ramKey(zip, inner), zip, inner)) {
+          return;
+        }
+      }
+    }
     File f = materialize(src);
     if (f == null || !f.isFile()) {
       Ui.toast(this, "Cannot open image");
@@ -2184,7 +2304,6 @@ public final class MainActivity extends Activity {
         sb.append("Folders: ").append(t.dirs).append('\n');
         sb.append("Size: ").append(FileOps.humanSize(t.bytes)).append('\n');
         sb.append("Time: ").append(System.currentTimeMillis() - t0).append(" ms");
-        appendMem(sb);
         out[0] = sb.toString();
       }
     }, new Runnable() {
@@ -2249,19 +2368,6 @@ public final class MainActivity extends Activity {
     String inner = ZipBrowse.innerOf(f.getAbsolutePath());
     File dest = new File(AppSettings.zipOpenDir(this), stemOf(zip.getName()));
     File out = new File(dest, inner);
-    byte[] ram = ZipBrowse.viewBytes(zip, inner);
-    if (ram != null) {
-      File parent = out.getParentFile();
-      if (parent != null) {
-        parent.mkdirs();
-      }
-      try {
-        FileOps.writeBytes(out, ram);
-        return out;
-      } catch (Exception e) {
-        return null;
-      }
-    }
     try {
       ZipBrowse.extract(zip, new String[]{inner}, dest);
     } catch (Exception e) {
@@ -2272,6 +2378,13 @@ public final class MainActivity extends Activity {
   private void openZipEntry(File f) {
     File zip = ZipBrowse.zipOf(f.getAbsolutePath());
     String inner = ZipBrowse.innerOf(f.getAbsolutePath());
+    byte[] ram = ZipBrowse.viewBytes(zip, inner);
+    if (ram != null) {
+      String name = new File(inner).getName();
+      if (openFromRam(name, ZipBrowse.ramKey(zip, inner), zip, inner)) {
+        return;
+      }
+    }
     File out = extractZipToFile(f);
     if (out == null || !out.exists()) {
       Ui.toast(this, "Extract failed");
@@ -2771,7 +2884,21 @@ public final class MainActivity extends Activity {
     });
   }
   private void showStats() {
-    Ui.alert(this, "Statistics", Stats.build(this), true);
+    Ui.bg(this, "Stats...", new Runnable() {
+      @Override
+      public void run() {
+        final String t = Stats.build(MainActivity.this);
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            if (isFinishing()) {
+              return;
+            }
+            Ui.alert(MainActivity.this, "Statistics", t, true);
+          }
+        });
+      }
+    }, null);
   }
   private void applyKeepScreenOn() {
     if (listView != null) {
@@ -2791,8 +2918,6 @@ public final class MainActivity extends Activity {
     vis(findRow, !s.hideSearch);
     vis(globChip, !s.hideGlob && !s.hideSearch);
     vis(pathView, !s.hidePath);
-    vis(hintRow, true);
-    vis(actionsBlock, true);
     vis(railView, !s.hideRail);
     rebuildActions();
   }
@@ -2885,7 +3010,7 @@ public final class MainActivity extends Activity {
           } else if (w == 2) {
             moveTab(idx, 1);
           } else {
-            closeTab(idx);
+            askCloseTab(idx);
           }
         }
       });
@@ -2957,14 +3082,36 @@ public final class MainActivity extends Activity {
     refresh();
     rebuildTabs();
   }
+  private void askCloseTab(final int idx) {
+    if (tabs.size() <= 1 || idx < 0 || idx >= tabs.size()) {
+      Ui.toast(this, "Last tab");
+      return;
+    }
+    if (AppSettings.get().optNoConfirmTab) {
+      closeTab(idx);
+      return;
+    }
+    Ui.confirm(this, Lang.t("Close this tab?"), new Runnable() {
+      @Override
+      public void run() {
+        closeTab(idx);
+      }
+    });
+  }
   private void closeTab(int idx) {
     if (tabs.size() <= 1 || idx < 0 || idx >= tabs.size()) {
       Ui.toast(this, "Last tab");
       return;
     }
     tabs.remove(idx);
+    if (idx < tabAt) {
+      tabAt--;
+    }
     if (tabAt >= tabs.size()) {
       tabAt = tabs.size() - 1;
+    }
+    if (tabAt < 0) {
+      tabAt = 0;
     }
     File d = tabs.get(tabAt).dir;
     currentDir = d != null ? d : Environment.getExternalStorageDirectory();
@@ -2979,20 +3126,19 @@ public final class MainActivity extends Activity {
     int act = e.getActionMasked();
     boolean atTop = listView.getFirstVisiblePosition() == 0;
     View ch = listView.getChildAt(0);
-    if (ch != null && ch.getTop() < 0) {
+    if (ch != null && ch.getTop() < -Theme.dp(this, 4)) {
       atTop = false;
     }
     if (act == MotionEvent.ACTION_DOWN) {
       pullY = atTop ? e.getY() : -1f;
       return;
     }
+    int fire = Theme.dp(this, 72);
     if (act == MotionEvent.ACTION_MOVE && pullY >= 0f && atTop) {
       float d = e.getY() - pullY;
-      int need = Theme.dp(this, 28);
-      if (d > need) {
+      if (d > Theme.dp(this, 28)) {
         pullView.setVisibility(View.VISIBLE);
-        boolean ready = d > Theme.dp(this, 72);
-        pullView.setText(ready ? "\u21bb  Release to refresh" : "\u21bb  Pull to refresh");
+        pullView.setText(d > fire ? "\u21bb  Release to refresh" : "\u21bb  Pull to refresh");
       } else {
         pullView.setVisibility(View.GONE);
       }
@@ -3000,13 +3146,13 @@ public final class MainActivity extends Activity {
     }
     if (act == MotionEvent.ACTION_UP || act == MotionEvent.ACTION_CANCEL) {
       boolean go = pullView.getVisibility() == View.VISIBLE && pullY >= 0f
-        && (e.getY() - pullY) > Theme.dp(this, 72);
+        && (e.getY() - pullY) > fire;
       pullView.setVisibility(View.GONE);
       pullY = -1f;
       if (go && act == MotionEvent.ACTION_UP) {
         OpLog.info(this, "refresh pull");
         refresh();
-        Ui.toast(this, "Catalog refreshed");
+        Ui.toast(this, "Refreshed");
       }
     }
   }
@@ -3063,12 +3209,25 @@ public final class MainActivity extends Activity {
           if (w == 0) {
             editBookmark(it);
           } else {
-            Bookmarks.remove(MainActivity.this, it.path);
-            Ui.toast(MainActivity.this, "Unmark");
-            rebuildMarks();
+            askUnmark(it);
           }
         }
       });
+  }
+  private void askUnmark(final Bookmarks.Item it) {
+    Runnable go = new Runnable() {
+      @Override
+      public void run() {
+        Bookmarks.remove(MainActivity.this, it.path);
+        Ui.toast(MainActivity.this, "Unmark");
+        rebuildMarks();
+      }
+    };
+    if (AppSettings.get().optNoConfirmTab) {
+      go.run();
+      return;
+    }
+    Ui.confirm(this, Lang.t("Remove this bookmark?"), go);
   }
   private void editBookmark(final Bookmarks.Item it) {
     Ui.input(this, "Bookmark name:", it.name, new Ui.OnText() {
@@ -3188,7 +3347,7 @@ public final class MainActivity extends Activity {
   @Override
   protected void onDestroy() {
     flushTabs();
-    Ui.dismissOpen();
+    Ui.dismissOpen(this);
     if (listView != null) {
       listView.setAdapter(null);
     }

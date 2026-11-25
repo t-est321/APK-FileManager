@@ -46,12 +46,14 @@ public final class ViewerActivity extends Activity {
   protected void onCreate(Bundle b) {
     super.onCreate(b);
     String path = getIntent().getStringExtra("path");
+    final String ramKey = getIntent().getStringExtra("ram");
+    final byte[] ram = ZipBrowse.getRam(ramKey);
     final File f = new File(path == null ? "" : path);
     LinearLayout root = new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
     root.setBackgroundColor(Color.BLACK);
     nameBar = new TextView(this);
-    nameBar.setText(f.getName() + "  |  " + FileOps.humanSize(f.length()));
+    nameBar.setText(f.getName() + "  |  " + FileOps.humanSize(ram != null ? ram.length : f.length()));
     nameBar.setTextColor(Theme.TEXT);
     nameBar.setTextSize(12);
     nameBar.setSingleLine(true);
@@ -66,12 +68,21 @@ public final class ViewerActivity extends Activity {
     setContentView(root);
     Ui.bar(this);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    int kind = getIntent().getBooleanExtra("asImage", false) ? Media.IMAGE : Media.ofFile(f);
+    int kind = getIntent().getBooleanExtra("asImage", false) ? Media.IMAGE
+      : (ram != null ? Media.of(f.getName()) : Media.ofFile(f));
     if (kind == Media.IMAGE) {
       imgStage = stage;
-      fillImgList(f);
-      if ("gif".equals(FileOps.ext(f.getName())) || Media.gifHeader(f)) {
-        gif = new GifView(this, f.getAbsolutePath());
+      if (ram == null) {
+        fillImgList(f);
+      } else {
+        imgAt = 0;
+        imgFiles = new File[]{f};
+      }
+      boolean gifHead = ram != null
+        ? (ram.length >= 6 && ram[0] == 'G' && ram[1] == 'I' && ram[2] == 'F')
+        : Media.gifHeader(f);
+      if ("gif".equals(FileOps.ext(f.getName())) || gifHead) {
+        gif = ram != null ? new GifView(this, ram) : new GifView(this, f.getAbsolutePath());
         if (gif.ready()) {
           ZoomPane zp = new ZoomPane(this);
           zp.setOnClickListener(new View.OnClickListener() {
@@ -86,10 +97,10 @@ public final class ViewerActivity extends Activity {
           Ui.toast(this, "GIF  pinch + drag");
         } else {
           gif = null;
-          loadImage(stage, f);
+          loadImage(stage, f, ram);
         }
       } else {
-        loadImage(stage, f);
+        loadImage(stage, f, ram);
       }
       addImgNav(stage);
     } else if (kind == Media.VIDEO || kind == Media.AUDIO) {
@@ -214,16 +225,16 @@ public final class ViewerActivity extends Activity {
         return;
       }
     }
-    loadImage(imgStage, nf);
+    loadImage(imgStage, nf, null);
   }
-  private void loadImage(final FrameLayout stage, File f) {
+  private void loadImage(final FrameLayout stage, File f, final byte[] ram) {
     final String path = f.getAbsolutePath();
     final int gen = ++imgGen;
     final Bitmap[] out = new Bitmap[1];
     Ui.bg(this, "Loading image...", new Runnable() {
       @Override
       public void run() {
-        out[0] = decode(path);
+        out[0] = decode(path, ram);
       }
     }, new Runnable() {
       @Override
@@ -268,7 +279,7 @@ public final class ViewerActivity extends Activity {
       }
     });
   }
-  private static Bitmap decode(String path) {
+  private static Bitmap decode(String path, byte[] ram) {
     if (path != null) {
       String low = path.toLowerCase(java.util.Locale.US);
       if (low.endsWith(".svg")) {
@@ -277,7 +288,8 @@ public final class ViewerActivity extends Activity {
           try {
             cap = AppSettings.get().svgRes();
           } catch (Exception ignored) {}
-          return SvgDraw.renderFit(FileOps.readString(new File(path)), cap);
+          String svg = ram != null ? new String(ram, "UTF-8") : FileOps.readString(new File(path));
+          return SvgDraw.renderFit(svg, cap);
         } catch (Exception e) {
           return null;
         }
@@ -285,7 +297,11 @@ public final class ViewerActivity extends Activity {
     }
     BitmapFactory.Options bounds = new BitmapFactory.Options();
     bounds.inJustDecodeBounds = true;
-    decodeStream(path, bounds);
+    if (ram != null) {
+      BitmapFactory.decodeByteArray(ram, 0, ram.length, bounds);
+    } else {
+      decodeStream(path, bounds);
+    }
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
       return null;
     }
@@ -302,19 +318,22 @@ public final class ViewerActivity extends Activity {
     BitmapFactory.Options o = new BitmapFactory.Options();
     o.inSampleSize = sample;
     try {
-      Bitmap bmp = decodeStream(path, o);
+      Bitmap bmp = ram != null ? BitmapFactory.decodeByteArray(ram, 0, ram.length, o)
+        : decodeStream(path, o);
       if (bmp != null) {
         return bmp;
       }
     } catch (OutOfMemoryError e) {
       o.inSampleSize = sample * 2;
       try {
-        return decodeStream(path, o);
+        return ram != null ? BitmapFactory.decodeByteArray(ram, 0, ram.length, o)
+          : decodeStream(path, o);
       } catch (OutOfMemoryError e2) {
         return null;
       }
     }
-    return BitmapFactory.decodeFile(path, o);
+    return ram != null ? BitmapFactory.decodeByteArray(ram, 0, ram.length, o)
+      : BitmapFactory.decodeFile(path, o);
   }
   private static Bitmap decodeStream(String path, BitmapFactory.Options o) {
     java.io.FileInputStream in = null;
@@ -607,7 +626,7 @@ public final class ViewerActivity extends Activity {
   }
   @Override
   protected void onDestroy() {
-    Ui.dismissOpen();
+    Ui.dismissOpen(this);
     progress.removeCallbacks(progressTick);
     if (gif != null) {
       gif.stopMovie();

@@ -489,7 +489,7 @@ public final class HtmlActivity extends Activity {
   }
   @Override
   protected void onDestroy() {
-    Ui.dismissOpen();
+    Ui.dismissOpen(this);
     if (fileCb != null) {
       try {
         fileCb.onReceiveValue(null);

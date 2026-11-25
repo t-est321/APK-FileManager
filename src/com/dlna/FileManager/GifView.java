@@ -28,6 +28,18 @@ final class GifView extends View {
     } catch (Exception ignored) {
       movie = null;
     }
+    readyInit();
+  }
+  GifView(Context c, byte[] data) {
+    super(c);
+    try {
+      movie = Movie.decodeByteArray(data, 0, data.length);
+    } catch (Exception ignored) {
+      movie = null;
+    }
+    readyInit();
+  }
+  private void readyInit() {
     if (movie != null && movie.width() > 0) {
       startAt = System.currentTimeMillis();
     }

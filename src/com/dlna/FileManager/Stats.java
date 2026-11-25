@@ -1,6 +1,6 @@
 package com.dlna.FileManager;
 import android.content.Context;
-import android.os.Environment;
+import android.os.Debug;
 import android.os.StatFs;
 import java.io.File;
 final class Stats {
@@ -11,22 +11,30 @@ final class Stats {
     long ms;
   }
   private Stats() {}
-  static String memLine() {
+  static String heapLine() {
     Runtime rt = Runtime.getRuntime();
     long free = rt.freeMemory();
     long used = rt.totalMemory() - free;
-    return "Used: " + FileOps.humanSize(used) + "\nFree: " + FileOps.humanSize(free)
-      + "\nRAM: " + FileOps.humanSize(rt.maxMemory());
+    return "Used: " + FileOps.humanSize(used) + "\nFree: " + FileOps.humanSize(free);
+  }
+  static String ramLine() {
+    Debug.MemoryInfo mi = new Debug.MemoryInfo();
+    Debug.getMemoryInfo(mi);
+    return "Used: " + FileOps.humanSize((long) mi.getTotalPss() * 1024L);
+  }
+  static String memLine() {
+    return heapLine() + "\n" + ramLine();
   }
   static String build(Context c) {
     StringBuilder sb = new StringBuilder(256);
     if (!AppSettings.get().optNoHeap) {
       sb.append("[ Heap ]\n");
-      sb.append(memLine());
+      sb.append(heapLine());
+      sb.append("\n\n[ RAM ]\n");
+      sb.append(ramLine());
       sb.append("\n\n");
     }
     sb.append("[ Storage ]\n");
-    sb.append(storageLine("External", Environment.getExternalStorageDirectory()));
     sb.append(storageLine("Internal", c.getFilesDir()));
     File appDir = c.getFilesDir().getParentFile();
     File settingsFile = AppSettings.file(c);
@@ -37,8 +45,6 @@ final class Stats {
     File pub = AppSettings.publicSettings();
     sb.append(pub.getAbsolutePath()).append('\n');
     sb.append(pub.exists() ? "present, " + FileOps.humanSize(pub.length()) : "not exported yet");
-    sb.append("\n\n[ Package ]\n");
-    sb.append(c.getPackageName());
     return sb.toString();
   }
   static FolderScan scan(File dir) {

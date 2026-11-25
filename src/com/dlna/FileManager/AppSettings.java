@@ -68,6 +68,7 @@ final class AppSettings {
   boolean hideGlob = false;
   boolean hideRail = false;
   boolean hideTerm = false;
+  boolean hideNotes = false;
   boolean hideStats = false;
   boolean hideLog = true;
   boolean hidePath = false;
@@ -79,6 +80,7 @@ final class AppSettings {
   boolean showFolderCounts = true;
   int trashDayIdx = 2;
   boolean confirmOverwrite = false;
+  boolean optNoConfirmTab = false;
   boolean imgCompress = false;
   boolean useCustomChrome = false;
   static final int[] CHROME_DEF_D = new int[]{
@@ -387,6 +389,7 @@ final class AppSettings {
       j.put("hideGlob", hideGlob);
       j.put("hideRail", hideRail);
       j.put("hideTerm", hideTerm);
+      j.put("hideNotes", hideNotes);
       j.put("hideStats", hideStats);
       j.put("hideLog", hideLog);
       j.put("hidePath", hidePath);
@@ -398,6 +401,7 @@ final class AppSettings {
       j.put("showFolderCounts", showFolderCounts);
       j.put("trashDayIdx", trashDayIdx);
       j.put("confirmOverwrite", confirmOverwrite);
+      j.put("optNoConfirmTab", optNoConfirmTab);
       j.put("imgCompress", imgCompress);
       j.put("useCustomChrome", useCustomChrome);
       int ci;
@@ -509,6 +513,7 @@ final class AppSettings {
     hideGlob = j.optBoolean("hideGlob", hideGlob);
     hideRail = j.optBoolean("hideRail", hideRail);
     hideTerm = j.optBoolean("hideTerm", hideTerm);
+    hideNotes = j.optBoolean("hideNotes", hideNotes);
     hideStats = j.optBoolean("hideStats", hideStats);
     hideLog = j.optBoolean("hideLog", hideLog);
     hidePath = j.optBoolean("hidePath", hidePath);
@@ -523,6 +528,7 @@ final class AppSettings {
       trashDayIdx = 2;
     }
     confirmOverwrite = j.optBoolean("confirmOverwrite", confirmOverwrite);
+    optNoConfirmTab = j.optBoolean("optNoConfirmTab", optNoConfirmTab);
     imgCompress = j.optBoolean("imgCompress", imgCompress);
     useCustomChrome = j.optBoolean("useCustomChrome", useCustomChrome);
     int ci;
@@ -629,6 +635,7 @@ final class AppSettings {
     hideGlob = false;
     hideRail = false;
     hideTerm = false;
+    hideNotes = false;
     hideStats = false;
     hideLog = true;
     hidePath = false;
@@ -640,6 +647,7 @@ final class AppSettings {
     showFolderCounts = true;
     trashDayIdx = 2;
     confirmOverwrite = false;
+    optNoConfirmTab = false;
     imgCompress = false;
     useCustomChrome = false;
     System.arraycopy(CHROME_DEF_D, 0, chromeD, 0, 5);

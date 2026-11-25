@@ -69,7 +69,7 @@ public final class MdActivity extends Activity {
   }
   @Override
   protected void onDestroy() {
-    Ui.dismissOpen();
+    Ui.dismissOpen(this);
     recycleBitmaps(root);
     root = null;
     super.onDestroy();

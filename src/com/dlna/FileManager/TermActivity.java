@@ -132,7 +132,7 @@ public final class TermActivity extends Activity {
     if (sc != null) {
       sc.removeCallbacks(jumpRun);
     }
-    Ui.dismissOpen();
+    Ui.dismissOpen(this);
     super.onDestroy();
   }
   private void prompt() {

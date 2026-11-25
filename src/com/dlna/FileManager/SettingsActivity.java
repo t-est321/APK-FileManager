@@ -46,7 +46,7 @@ public final class SettingsActivity extends Activity {
   }
   @Override
   protected void onDestroy() {
-    Ui.dismissOpen();
+    Ui.dismissOpen(this);
     super.onDestroy();
   }
   private void backWithoutSave() {
@@ -63,7 +63,7 @@ public final class SettingsActivity extends Activity {
     final AppSettings s = AppSettings.get();
     rows.setBackgroundColor(Theme.BG);
     rows.removeAllViews();
-    addHeader(Lang.t("Settings"), "v4.2.1");
+    addHeader(Lang.t("Settings"), "v4.2.2");
     rows.addView(actionBtn(Lang.t("Back without save"), Theme.DANGER, new Runnable() {
       @Override
       public void run() {
@@ -203,6 +203,10 @@ public final class SettingsActivity extends Activity {
     rows.addView(toggleBtn(Lang.t("Hide Term button"), s.hideTerm, new Runnable() {
       @Override
       public void run() { s.hideTerm = !s.hideTerm; }
+    }));
+    rows.addView(toggleBtn(Lang.t("Hide Notes button"), s.hideNotes, new Runnable() {
+      @Override
+      public void run() { s.hideNotes = !s.hideNotes; }
     }));
     rows.addView(toggleBtn(Lang.t("Hide Stats button"), s.hideStats, new Runnable() {
       @Override
@@ -483,6 +487,12 @@ public final class SettingsActivity extends Activity {
       @Override
       public void run() {
         s.confirmOverwrite = !s.confirmOverwrite;
+      }
+    }));
+    rows.addView(toggleBtn(Lang.t("Disable tab / bookmark delete warning"), s.optNoConfirmTab, new Runnable() {
+      @Override
+      public void run() {
+        s.optNoConfirmTab = !s.optNoConfirmTab;
       }
     }));
     rows.addView(cycleBtn(Lang.t("Trash keep: ") + s.trashDays() + " days", new Runnable() {
@@ -1368,7 +1378,7 @@ public final class SettingsActivity extends Activity {
   }
   private void showHelp() {
     Ui.alert(this, "Help",
-      "File Manager help\nBrowse\n  Tap selects a file or folder. Double-tap opens it.\n  Row menu (vertical dots) shows commands for one item.\n  Multi-select: tap several rows, then the dots on a selected row.\n  Pull down at the top of the list to refresh.\n  Tap the path bar to type a path. Long-press the path for Settings.\nSearch\n  Matches names in this folder and subfolders.\n  Enable * glob for wildcards (* and ?).\nTabs and marks\n  + adds a tab. Long-press a tab to rename, change path, move or close.\n  Tabs are saved to tabs.txt.\n  Marks (bookmarks) are chips under the navigation bar.\nArchives\n  Pack to ZIP / TAR / TAR.GZ. Archives go to APP_DATA/.../Archives.\n  Double-tap zip/tar/tar.gz to browse. Open a file inside to edit; Save writes it back.\n  Extract or Copy to... writes files out.\nProtect\n  Settings > Safety. Default trees: app data and APP_DATA.\n  The path list can be edited. SHA-256 lock password guards those settings.\n  Terminal rm/mv/mkdir/touch/cp refuse protected paths.\nHTML\n  Local viewer. Downloads go to APP_DATA/.../DownloadedFiles.\n  Pages can pick a file. Other apps can VIEW/SEND html or text into this app.\nTerminal\n  Built-in shell: cd, cd.., ls, cat, rm, cp, mv, mkdir, help.\nLogs\n  ops.log in cache (optional). ErrorLog_/CrashLog_ timestamps always in APP_DATA.\nHide UI\n  Hide Term, Stats and Log buttons on the action panel.\nUSB\n  Get USB IDs (demo) lists real /storage and /mnt/media_rw volume paths.\n  Tap a volume to add it to the navigation clip.\nFile types\n  Long-press a file-type row in Settings to disable that extension group.",
+      "File Manager help\nBrowse\n  Tap selects a file or folder. Double-tap opens it.\n  Row menu (vertical dots) shows commands for one item.\n  Multi-select: tap several rows, then the dots on a selected row.\n  Pull down at the top of the list to refresh.\n  Tap the path bar to type a path. Long-press the path for Settings.\nSearch\n  Matches names in this folder and subfolders.\n  Enable * glob for wildcards (* and ?).\nTabs and marks\n  + adds a tab. Long-press a tab to rename, change path, move or close.\n  Tabs are saved to tabs.txt.\n  Marks (bookmarks) are chips under the navigation bar.\nArchives\n  Pack to ZIP / TAR / TAR.GZ. Archives go to APP_DATA/.../Archives.\n  Double-tap zip/tar/tar.gz to browse. Open a file inside to edit; Save writes it back.\n  Extract or Copy to... writes files out.\nProtect\n  Settings > Safety. Default trees: app data and APP_DATA.\n  The path list can be edited. SHA-256 lock password guards those settings.\n  Terminal rm/mv/mkdir/touch/cp refuse protected paths.\nHTML\n  Local viewer. Downloads go to APP_DATA/.../DownloadedFiles.\n  Pages can pick a file. Other apps can VIEW/SEND html or text into this app.\nTerminal\n  Built-in shell: cd, cd.., ls, cat, rm, cp, mv, mkdir, help.\nLogs\n  ops.log in cache (optional). ErrorLog_/CrashLog_ timestamps always in APP_DATA.\nHide UI\n  Hide Term, Notes, Stats and Log buttons on the action panel.\nUSB\n  Get USB IDs (demo) lists real /storage and /mnt/media_rw volume paths.\n  Tap a volume to add it to the navigation clip.\nFile types\n  Long-press a file-type row in Settings to disable that extension group.",
       true);
   }
   private void backupMenu() {
